@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tin nhắn hội viên - Hội Tâm Linh</title>
+  <link rel="stylesheet" href="assets/site.css">
+</head>
+<body class="admin-body">
+  <div class="admin-topbar">
+    <a class="admin-brand" href="admin.html">
+      <img src="https://hoitamlinh.org/wp-content/uploads/2024/09/tam-linh.png" alt="">
+      <span><strong>Hội Tâm Linh</strong><small>Quản trị nội bộ</small></span>
+    </a>
+    <div class="admin-account"><span id="admin-user-name">Quản trị viên</span><button type="button" data-sign-out>Đăng xuất</button></div>
+  </div>
+
+  <div class="admin-layout">
+    <aside class="admin-sidebar" aria-label="Điều hướng quản trị">
+      <nav>
+        <a href="admin.html">Tổng quan</a>
+        <a href="dang-bai.html">Đăng bài mới</a>
+        <a href="admin.html#members-section">Hội viên</a>
+        <a class="active" href="admin-tin-nhan.html">Tin nhắn</a>
+        <a href="index.html">Xem website</a>
+      </nav>
+    </aside>
+
+    <main class="admin-main message-main">
+      <header class="admin-page-heading">
+        <div><p>Liên lạc hội viên</p><h1>Soạn tin nhắn</h1></div>
+        <span class="provider-status">Nhà cung cấp SMS chưa kết nối</span>
+      </header>
+
+      <div class="messaging-layout">
+        <aside class="campaign-list-panel">
+          <div class="campaign-list-heading"><h2>Chiến dịch</h2><button id="new-campaign" type="button">Tạo mới</button></div>
+          <div id="campaign-list"><p class="empty-state">Chưa có chiến dịch.</p></div>
+        </aside>
+
+        <form class="message-composer" id="message-form">
+          <div class="composer-section">
+            <label for="campaign-title">Tên chiến dịch</label>
+            <input id="campaign-title" name="title" placeholder="Ví dụ: Thông báo sinh hoạt thứ Bảy" required>
+          </div>
+
+          <div class="composer-section audience-section">
+            <div class="section-row"><div><label>Người nhận</label><small id="recipient-count">0 người được chọn</small></div><button id="select-all-members" type="button">Chọn tất cả đủ điều kiện</button></div>
+            <div class="recipient-list" id="recipient-list"><p class="empty-state">Chưa có hội viên đồng ý nhận SMS.</p></div>
+          </div>
+
+          <div class="composer-section">
+            <div class="section-row"><label for="campaign-message">Nội dung tin nhắn</label><small><span id="message-count">0</span>/480 ký tự</small></div>
+            <textarea id="campaign-message" name="message" maxlength="480" rows="7" placeholder="Nhập nội dung thông báo gửi đến hội viên..." required></textarea>
+            <p class="message-hint">Nội dung nên ghi rõ Hội Tâm Linh và cách ngừng nhận tin.</p>
+          </div>
+
+          <div class="composer-footer">
+            <button class="button secondary" id="save-campaign" type="submit">Lưu bản nháp</button>
+            <button class="button primary" id="queue-campaign" type="button">Chuẩn bị gửi</button>
+          </div>
+        </form>
+
+        <aside class="message-preview-panel">
+          <h2>Xem trước</h2>
+          <div class="phone-preview">
+            <div class="phone-header">Hội Tâm Linh</div>
+            <div class="message-bubble" id="message-preview">Nội dung tin nhắn sẽ hiển thị tại đây.</div>
+          </div>
+          <dl class="delivery-summary">
+            <div><dt>Kênh</dt><dd>SMS</dd></div>
+            <div><dt>Người nhận</dt><dd id="summary-recipients">0</dd></div>
+            <div><dt>Trạng thái</dt><dd>Bản nháp</dd></div>
+          </dl>
+        </aside>
+      </div>
+      <div class="editor-notice" id="message-notice" role="status" hidden></div>
+    </main>
+  </div>
+  <script type="module" src="assets/messaging.js"></script>
+</body>
+</html>

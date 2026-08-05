@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quản trị - Hội Tâm Linh</title>
+  <link rel="stylesheet" href="assets/site.css">
+</head>
+<body class="admin-body">
+  <div class="admin-topbar">
+    <a class="admin-brand" href="admin.html">
+      <img src="https://hoitamlinh.org/wp-content/uploads/2024/09/tam-linh.png" alt="">
+      <span><strong>Hội Tâm Linh</strong><small>Quản trị nội bộ</small></span>
+    </a>
+    <div class="admin-account"><span id="admin-user-name">Quản trị viên</span><button type="button" data-sign-out>Đăng xuất</button></div>
+  </div>
+
+  <div class="admin-layout">
+    <aside class="admin-sidebar" aria-label="Điều hướng quản trị">
+      <nav>
+        <a class="active" href="admin.html">Tổng quan</a>
+        <a href="dang-bai.html">Đăng bài mới</a>
+        <a href="#members-section">Hội viên</a>
+        <a href="#accounts-section">Tài khoản & vai trò</a>
+        <a href="admin-tin-nhan.html">Tin nhắn</a>
+        <a href="index.html">Xem website</a>
+      </nav>
+    </aside>
+
+    <main class="admin-main">
+      <header class="admin-page-heading">
+        <div><p>Bảng điều khiển</p><h1>Tổng quan hoạt động</h1></div>
+        <a class="button primary" href="dang-bai.html">Tạo bài viết</a>
+      </header>
+
+      <section class="admin-stats" aria-label="Thống kê">
+        <div class="stat-tile"><span>Bài viết</span><strong id="stat-posts">0</strong><small>Tất cả trạng thái</small></div>
+        <div class="stat-tile"><span>Hội viên</span><strong id="stat-members">0</strong><small>Danh sách liên lạc</small></div>
+        <div class="stat-tile"><span>Tài khoản</span><strong id="stat-accounts">0</strong><small>Admin, Monitor, Hội viên</small></div>
+        <div class="stat-tile"><span>Chiến dịch</span><strong id="stat-campaigns">0</strong><small>Đã lưu và đã gửi</small></div>
+      </section>
+
+      <section class="admin-panel" id="accounts-section">
+        <div class="panel-heading"><div><h2>Tài khoản và vai trò</h2><p>Admin quản lý toàn bộ; Monitor được đăng và sửa bài của chính mình.</p></div></div>
+        <div class="table-wrap">
+          <table class="admin-table">
+            <thead><tr><th>Người dùng</th><th>Email</th><th>Vai trò</th><th>Trạng thái</th></tr></thead>
+            <tbody id="accounts-table"><tr><td colspan="4">Đang tải...</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="admin-panel" id="members-section">
+        <div class="panel-heading"><div><h2>Danh sách hội viên</h2><p>Thông tin dùng để gửi thông báo nội bộ. Chỉ gửi SMS khi hội viên đã đồng ý.</p></div></div>
+        <form class="member-form" id="member-form">
+          <label>Họ và tên<input name="full_name" required></label>
+          <label>Điện thoại<input name="phone" type="tel"></label>
+          <label>Email<input name="email" type="email"></label>
+          <label class="check-field"><input name="sms_opt_in" type="checkbox"> Đồng ý nhận SMS</label>
+          <button class="button primary" type="submit">Thêm hội viên</button>
+        </form>
+        <div class="table-wrap">
+          <table class="admin-table">
+            <thead><tr><th>Hội viên</th><th>Liên lạc</th><th>Nhận SMS</th><th>Trạng thái</th></tr></thead>
+            <tbody id="members-table"><tr><td colspan="4">Chưa có hội viên.</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+      <div class="editor-notice" id="admin-notice" role="status" hidden></div>
+    </main>
+  </div>
+  <script type="module" src="assets/admin.js"></script>
+</body>
+</html>

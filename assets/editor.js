@@ -1,3 +1,8 @@
+import DOMPurify from 'https://cdn.jsdelivr.net/npm/dompurify@3.4.13/+esm';
+import { supabase } from './supabase-client.js';
+import { requireRole, signOut } from './auth.js';
+
+const access = await requireRole(['admin', 'monitor']);
 const editorForm = document.querySelector('#post-editor');
 const titleInput = document.querySelector('#post-title');
 const slugInput = document.querySelector('#post-slug');
@@ -11,6 +16,13 @@ const imagePreview = document.querySelector('#featured-preview');
 const imagePreviewElement = document.querySelector('#featured-preview-image');
 const notice = document.querySelector('#editor-notice');
 const previewPanel = document.querySelector('#post-preview');
+
+document.querySelectorAll('[data-sign-out]').forEach(button => button.addEventListener('click', event => {
+  event.preventDefault();
+  signOut();
+}));
+const adminLink = document.querySelector('#admin-dashboard-link');
+if (adminLink && access.profile.role === 'admin') adminLink.hidden = false;
 
 const slugify = value => value
   .normalize('NFD')
@@ -112,14 +124,56 @@ document.querySelector('#close-preview').addEventListener('click', () => {
   document.querySelector('.editor-heading').scrollIntoView({ behavior: 'smooth' });
 });
 
-document.querySelector('#publish-post').addEventListener('click', () => {
+document.querySelector('#publish-post').addEventListener('click', async () => {
   if (!titleInput.value.trim() || !contentEditor.textContent.trim()) {
     showNotice('Vui lòng nhập tiêu đề và nội dung trước khi xuất bản.', 'error');
     return;
   }
-  statusInput.value = 'published';
-  localStorage.setItem('hoitamlinh-post-draft', JSON.stringify(draftData()));
-  showNotice('Giao diện đã sẵn sàng. Cần kết nối Supabase để xuất bản bài lên website.', 'info');
+  if (access.preview) {
+    showNotice('Bản xem trước không ghi dữ liệu lên Supabase.', 'info');
+    return;
+  }
+
+  const publishButton = document.querySelector('#publish-post');
+  publishButton.disabled = true;
+  publishButton.textContent = 'Đang xuất bản...';
+  try {
+    let imageUrl = null;
+    const [imageFile] = imageInput.files;
+    if (imageFile) {
+      const extension = imageFile.name.split('.').pop().toLowerCase();
+      const imagePath = `${access.user.id}/${Date.now()}-${slugInput.value || 'bai-viet'}.${extension}`;
+      const { error: uploadError } = await supabase.storage.from('post-images').upload(imagePath, imageFile, { upsert: false });
+      if (uploadError) throw uploadError;
+      imageUrl = supabase.storage.from('post-images').getPublicUrl(imagePath).data.publicUrl;
+    }
+
+    statusInput.value = 'published';
+    const now = new Date().toISOString();
+    const { error } = await supabase.from('content_items').insert({
+      type: 'post',
+      slug: slugInput.value || slugify(titleInput.value),
+      title: titleInput.value.trim(),
+      excerpt: summaryInput.value.trim() || null,
+      content_html: DOMPurify.sanitize(contentEditor.innerHTML),
+      image_url: imageUrl,
+      categories: [categoryInput.value],
+      status: statusInput.value,
+      featured: editorForm.elements.namedItem('featured').checked,
+      comments_enabled: editorForm.elements.namedItem('comments').checked,
+      author_id: access.user.id,
+      published_at: now,
+      modified_at: now
+    });
+    if (error) throw error;
+    localStorage.removeItem('hoitamlinh-post-draft');
+    showNotice('Bài viết đã được xuất bản lên Supabase.');
+  } catch (error) {
+    showNotice(error.message || 'Không thể xuất bản bài viết.', 'error');
+  } finally {
+    publishButton.disabled = false;
+    publishButton.textContent = 'Xuất bản';
+  }
 });
 
 const savedDraft = localStorage.getItem('hoitamlinh-post-draft');
