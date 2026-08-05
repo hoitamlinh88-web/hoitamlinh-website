@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Đăng bài - Hội Tâm Linh</title>
+  <link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+  <div class="topbar">
+    <div class="inner">
+      <div>Hội Tâm Linh (Spiritual Center)</div>
+      <div class="right">
+        <span>Khu vực quản trị nội dung</span><span>|</span>
+        <a href="dang-nhap.html">Đăng xuất</a>
+      </div>
+    </div>
+  </div>
+  <header class="nav editor-nav">
+    <div class="inner">
+      <a class="brand" href="index.html" aria-label="Hội Tâm Linh Spiritual Center">
+        <img src="https://hoitamlinh.org/wp-content/uploads/2024/09/tam-linh.png" alt="Hội Tâm Linh Spiritual Center">
+      </a>
+      <button class="mobile-menu" type="button" aria-expanded="false">Menu</button>
+      <nav aria-label="Menu quản trị">
+        <ul>
+          <li><a href="index.html">Xem website</a></li>
+          <li><a class="active" href="dang-bai.html">Đăng bài</a></li>
+          <li><a href="chia-se.html">Bài đã đăng</a></li>
+          <li><a href="hinh-anh.html">Thư viện ảnh</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="editor-page">
+    <div class="editor-heading">
+      <div>
+        <p class="editor-eyebrow">Quản lý nội dung</p>
+        <h1>Tạo bài viết mới</h1>
+      </div>
+      <div class="editor-actions">
+        <button class="button secondary" id="save-draft" type="button">Lưu bản nháp</button>
+        <button class="button secondary" id="toggle-preview" type="button">Xem trước</button>
+        <button class="button primary" id="publish-post" type="button">Xuất bản</button>
+      </div>
+    </div>
+
+    <form class="post-editor" id="post-editor">
+      <section class="editor-main" aria-label="Nội dung bài viết">
+        <label class="field-label" for="post-title">Tiêu đề bài viết</label>
+        <input class="title-input" id="post-title" name="title" type="text" placeholder="Nhập tiêu đề bài viết" required>
+
+        <label class="field-label" for="post-summary">Đoạn giới thiệu</label>
+        <textarea id="post-summary" name="summary" rows="3" placeholder="Viết một đoạn ngắn giới thiệu nội dung bài viết"></textarea>
+
+        <div class="field-label">Nội dung</div>
+        <div class="editor-toolbar" role="toolbar" aria-label="Định dạng nội dung">
+          <button type="button" data-command="bold" title="In đậm"><strong>B</strong></button>
+          <button type="button" data-command="italic" title="In nghiêng"><em>I</em></button>
+          <button type="button" data-command="formatBlock" data-value="h2" title="Tiêu đề phụ">H2</button>
+          <button type="button" data-command="insertUnorderedList" title="Danh sách">Danh sách</button>
+          <button type="button" data-command="formatBlock" data-value="blockquote" title="Trích dẫn">Trích dẫn</button>
+          <button type="button" id="insert-link" title="Chèn liên kết">Liên kết</button>
+          <button type="button" data-command="removeFormat" title="Xóa định dạng">Xóa định dạng</button>
+        </div>
+        <div class="rich-editor" id="post-content" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="Bắt đầu viết nội dung tại đây..."></div>
+      </section>
+
+      <aside class="editor-settings" aria-label="Thiết lập bài viết">
+        <section class="settings-section">
+          <h2>Thông tin bài viết</h2>
+          <label for="post-category">Chuyên mục</label>
+          <select id="post-category" name="category">
+            <option value="chia-se">Chia sẻ</option>
+            <option value="su-kien">Sự kiện</option>
+            <option value="hinh-anh">Hình ảnh</option>
+            <option value="ban-chuyen-mon">Ban chuyên môn</option>
+          </select>
+
+          <label for="post-author">Tác giả</label>
+          <input id="post-author" name="author" type="text" placeholder="Tên người viết">
+
+          <label for="post-slug">Đường dẫn</label>
+          <input id="post-slug" name="slug" type="text" placeholder="duong-dan-bai-viet">
+
+          <label for="post-status">Trạng thái</label>
+          <select id="post-status" name="status">
+            <option value="draft">Bản nháp</option>
+            <option value="review">Chờ duyệt</option>
+            <option value="published">Xuất bản</option>
+          </select>
+        </section>
+
+        <section class="settings-section">
+          <h2>Ảnh đại diện</h2>
+          <label class="image-upload" for="featured-image">
+            <span>Chọn ảnh từ máy</span>
+            <small>JPG hoặc PNG, khuyến nghị tỷ lệ 4:3</small>
+          </label>
+          <input id="featured-image" name="featuredImage" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+          <div class="featured-preview" id="featured-preview" hidden>
+            <img id="featured-preview-image" alt="Ảnh đại diện đã chọn">
+            <button id="remove-image" type="button">Xóa ảnh</button>
+          </div>
+        </section>
+
+        <section class="settings-section editor-checks">
+          <h2>Tùy chọn</h2>
+          <label><input type="checkbox" name="featured"> Đưa bài lên trang chủ</label>
+          <label><input type="checkbox" name="comments" checked> Cho phép bình luận</label>
+        </section>
+      </aside>
+    </form>
+
+    <section class="post-preview" id="post-preview" hidden aria-live="polite">
+      <div class="preview-header"><h2>Xem trước bài viết</h2><button type="button" id="close-preview">Đóng</button></div>
+      <article>
+        <img id="preview-cover" alt="" hidden>
+        <p class="preview-category" id="preview-category"></p>
+        <h1 id="preview-title">Tiêu đề bài viết</h1>
+        <p class="preview-summary" id="preview-summary"></p>
+        <div id="preview-content"></div>
+      </article>
+    </section>
+
+    <div class="editor-notice" id="editor-notice" role="status" aria-live="polite" hidden></div>
+  </main>
+
+  <footer class="footer">
+    <div class="copyright">Copyright 2026 © Hội Tâm Linh Spiritual Center</div>
+  </footer>
+  <script src="assets/site.js"></script>
+  <script src="assets/editor.js"></script>
+</body>
+</html>
