@@ -54,8 +54,8 @@ const { data, error } = await supabase
 if (error) {
   status.textContent = 'Chưa thể tải các bài viết mới.';
 } else if (!data.length) {
-  status.textContent = '';
-  status.hidden = true;
+  status.textContent = 'Các bài mới được xuất bản sẽ xuất hiện tại đây.';
+  status.classList.add('empty-published-posts');
 } else {
   grid.replaceChildren(...data.map(renderPost));
   status.hidden = true;

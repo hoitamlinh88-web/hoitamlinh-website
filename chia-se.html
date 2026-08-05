@@ -36,16 +36,29 @@
       </nav>
     </div>
   </header>
-  <main>
-    <section class="content-wrap page">
-      <div class="content-grid ">
-        
-<article class="copy full">
-  <h1>Chia sẻ</h1>
-  <p>Các bài viết chia sẻ được lưu lại từ website hiện tại.</p>
-  <div id="published-share-posts" class="card-grid dynamic-post-grid" aria-live="polite"></div>
-  <div id="published-share-status" class="content-status">Đang tải bài viết mới...</div>
-  <div class="card-grid">
+  <main class="share-page">
+    <section class="share-hero" aria-labelledby="share-title">
+      <img src="assets/chia-se-hero.png" alt="Không gian đọc sách và tĩnh tâm với hoa sen">
+      <div class="share-hero-shade"></div>
+      <div class="share-hero-inner">
+        <p class="share-eyebrow">Góc bình an và chiêm nghiệm</p>
+        <h1 id="share-title">Chia sẻ</h1>
+        <p>Những câu chuyện, trải nghiệm và suy ngẫm từ hành trình sống, học hỏi và kết nối của các hội viên.</p>
+      </div>
+    </section>
+    <section class="share-content-band">
+      <div class="share-inner">
+        <header class="share-section-heading">
+          <div><p class="share-eyebrow">Mới xuất bản</p><h2>Bài viết mới</h2></div>
+          <a href="dang-nhap.html">Dành cho hội viên <span aria-hidden="true">→</span></a>
+        </header>
+        <div id="published-share-posts" class="dynamic-post-grid" aria-live="polite"></div>
+        <div id="published-share-status" class="content-status">Đang tải bài viết mới...</div>
+        <header class="share-section-heading share-archive-heading">
+          <div><p class="share-eyebrow">Từ thư viện Hội</p><h2>Câu chuyện và chiêm nghiệm</h2></div>
+          <p>Chọn một bài viết để bắt đầu đọc.</p>
+        </header>
+        <div class="legacy-share-grid">
 <a class="card" href="toi-thich-o-lai-lop.html">
   
   <span>Tôi thích ở lại lớp</span>
@@ -118,7 +131,6 @@
   
   <span>Thầy độ của tôi</span>
 </a></div>
-</article>
       </div>
     </section>
   </main>
