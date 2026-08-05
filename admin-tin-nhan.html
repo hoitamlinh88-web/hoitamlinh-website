@@ -32,6 +32,41 @@
         <span class="provider-status">Nhà cung cấp SMS chưa kết nối</span>
       </header>
 
+      <section class="admin-panel contact-import-panel" aria-labelledby="contact-import-title">
+        <div class="panel-heading">
+          <div><h2 id="contact-import-title">Nhập danh sách hội viên</h2><p>Tải Excel/CSV hoặc thêm từng người. Họ, tên và số điện thoại là bắt buộc.</p></div>
+        </div>
+        <div class="contact-import-grid">
+          <div class="contact-import-box">
+            <h3>Tải danh sách</h3>
+            <label class="file-drop" for="member-file">
+              <strong>Chọn file Excel hoặc CSV</strong>
+              <span>Cột mẫu: First Name, Last Name, Phone, DOB, Address</span>
+              <input id="member-file" type="file" accept=".xlsx,.xls,.csv">
+            </label>
+            <label class="consent-field"><input id="import-sms-consent" type="checkbox"> Danh sách này đã đồng ý nhận SMS</label>
+            <div id="import-preview" class="import-preview" hidden></div>
+            <div class="import-actions" id="import-actions" hidden>
+              <button class="button secondary" id="cancel-import" type="button">Hủy</button>
+              <button class="button primary" id="save-import" type="button">Lưu danh sách</button>
+            </div>
+          </div>
+
+          <form class="contact-import-box manual-member-form" id="manual-member-form">
+            <h3>Nhập tay</h3>
+            <div class="contact-fields">
+              <label>First name <span>*</span><input name="first_name" required></label>
+              <label>Last name <span>*</span><input name="last_name" required></label>
+              <label>Số điện thoại <span>*</span><input name="phone" type="tel" required></label>
+              <label>Ngày sinh<input name="date_of_birth" type="date"></label>
+              <label class="wide-field">Địa chỉ<input name="address"></label>
+            </div>
+            <label class="consent-field"><input name="sms_opt_in" type="checkbox"> Hội viên đã đồng ý nhận SMS</label>
+            <div class="manual-form-actions"><button class="button primary" type="submit">Thêm hội viên</button></div>
+          </form>
+        </div>
+      </section>
+
       <div class="messaging-layout">
         <aside class="campaign-list-panel">
           <div class="campaign-list-heading"><h2>Chiến dịch</h2><button id="new-campaign" type="button">Tạo mới</button></div>
@@ -77,6 +112,7 @@
       <div class="editor-notice" id="message-notice" role="status" hidden></div>
     </main>
   </div>
+  <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script type="module" src="assets/messaging.js"></script>
 </body>
 </html>
