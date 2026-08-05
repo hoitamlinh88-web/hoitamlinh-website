@@ -6,10 +6,13 @@ const form = document.querySelector('#message-form');
 const manualMemberForm = document.querySelector('#manual-member-form');
 const memberFileInput = document.querySelector('#member-file');
 const messageInput = document.querySelector('#campaign-message');
+const campaignImageInput = document.querySelector('#campaign-image');
+const campaignImagePreview = document.querySelector('#message-image-preview');
 const notice = document.querySelector('#message-notice');
 let members = [];
 let campaigns = [];
 let importedRows = [];
+let campaignImageUrl = '';
 
 document.querySelector('#admin-user-name').textContent = access.profile.display_name || access.user.email;
 document.querySelectorAll('[data-sign-out]').forEach(button => button.addEventListener('click', signOut));
@@ -212,6 +215,41 @@ messageInput.addEventListener('input', () => {
   document.querySelector('#message-preview').textContent = messageInput.value || 'Nội dung tin nhắn sẽ hiển thị tại đây.';
 });
 
+function updateChannelSummary() {
+  document.querySelector('#summary-channel').textContent = campaignImageInput.files.length ? 'MMS' : 'SMS';
+}
+
+function clearCampaignImage() {
+  if (campaignImageUrl) URL.revokeObjectURL(campaignImageUrl);
+  campaignImageUrl = '';
+  campaignImageInput.value = '';
+  campaignImagePreview.removeAttribute('src');
+  campaignImagePreview.hidden = true;
+  document.querySelector('#remove-campaign-image').hidden = true;
+  updateChannelSummary();
+}
+
+campaignImageInput.addEventListener('change', () => {
+  const file = campaignImageInput.files[0];
+  if (!file) return clearCampaignImage();
+  if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
+    clearCampaignImage();
+    return showNotice('Chỉ nhận hình JPEG, PNG, WebP hoặc GIF.', 'error');
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    clearCampaignImage();
+    return showNotice('Hình MMS phải nhỏ hơn hoặc bằng 5 MB.', 'error');
+  }
+  if (campaignImageUrl) URL.revokeObjectURL(campaignImageUrl);
+  campaignImageUrl = URL.createObjectURL(file);
+  campaignImagePreview.src = campaignImageUrl;
+  campaignImagePreview.hidden = false;
+  document.querySelector('#remove-campaign-image').hidden = false;
+  updateChannelSummary();
+});
+
+document.querySelector('#remove-campaign-image').addEventListener('click', clearCampaignImage);
+
 document.querySelector('#select-all-members').addEventListener('click', () => {
   document.querySelectorAll('#recipient-list input').forEach(input => { input.checked = true; });
   updateRecipientCount();
@@ -219,10 +257,21 @@ document.querySelector('#select-all-members').addEventListener('click', () => {
 
 document.querySelector('#new-campaign').addEventListener('click', () => {
   form.reset();
+  clearCampaignImage();
   document.querySelectorAll('#recipient-list input').forEach(input => { input.checked = false; });
   messageInput.dispatchEvent(new Event('input'));
   updateRecipientCount();
 });
+
+async function uploadCampaignImage() {
+  const file = campaignImageInput.files[0];
+  if (!file || access.preview) return file ? campaignImageUrl : null;
+  const extension = file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+  const path = `${access.user.id}/${Date.now()}-${crypto.randomUUID()}.${extension}`;
+  const { error } = await supabase.storage.from('message-media').upload(path, file, { contentType: file.type, upsert: false });
+  if (error) throw error;
+  return supabase.storage.from('message-media').getPublicUrl(path).data.publicUrl;
+}
 
 async function saveCampaign(status = 'draft') {
   const recipients = selectedMembers();
@@ -233,7 +282,8 @@ async function saveCampaign(status = 'draft') {
     renderCampaigns();
     return;
   }
-  const { data: campaign, error } = await supabase.from('message_campaigns').insert({ title: form.title.value.trim(), message: messageInput.value.trim(), channel: 'sms', status, created_by: access.user.id, audience_filter: { member_ids: recipients.map(member => member.id) } }).select('id').single();
+  const mediaUrl = await uploadCampaignImage();
+  const { data: campaign, error } = await supabase.from('message_campaigns').insert({ title: form.title.value.trim(), message: messageInput.value.trim(), channel: mediaUrl ? 'mms' : 'sms', media_url: mediaUrl, status, created_by: access.user.id, audience_filter: { member_ids: recipients.map(member => member.id) } }).select('id').single();
   if (error) throw error;
   const rows = recipients.map(member => ({ campaign_id: campaign.id, member_id: member.id, destination: member.phone }));
   const { error: recipientError } = await supabase.from('message_recipients').insert(rows);

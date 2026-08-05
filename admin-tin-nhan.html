@@ -85,8 +85,14 @@
           </div>
 
           <div class="composer-section">
-            <div class="section-row"><label for="campaign-message">Nội dung tin nhắn</label><small><span id="message-count">0</span>/480 ký tự</small></div>
-            <textarea id="campaign-message" name="message" maxlength="480" rows="7" placeholder="Nhập nội dung thông báo gửi đến hội viên..." required></textarea>
+            <div class="section-row"><label for="campaign-message">Nội dung MMS</label><small><span id="message-count">0</span>/1.600 ký tự</small></div>
+            <textarea id="campaign-message" name="message" maxlength="1600" rows="10" placeholder="Nhập nội dung thông báo gửi đến hội viên..." required></textarea>
+            <div class="mms-media-field">
+              <label for="campaign-image">Hình ảnh đính kèm</label>
+              <input id="campaign-image" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
+              <small>JPEG, PNG, WebP hoặc GIF, tối đa 5 MB.</small>
+              <button id="remove-campaign-image" type="button" hidden>Xóa hình</button>
+            </div>
             <p class="message-hint">Nội dung nên ghi rõ Hội Tâm Linh và cách ngừng nhận tin.</p>
           </div>
 
@@ -100,10 +106,11 @@
           <h2>Xem trước</h2>
           <div class="phone-preview">
             <div class="phone-header">Hội Tâm Linh</div>
+            <img id="message-image-preview" class="message-image-preview" alt="Hình MMS xem trước" hidden>
             <div class="message-bubble" id="message-preview">Nội dung tin nhắn sẽ hiển thị tại đây.</div>
           </div>
           <dl class="delivery-summary">
-            <div><dt>Kênh</dt><dd>SMS</dd></div>
+            <div><dt>Kênh</dt><dd id="summary-channel">SMS</dd></div>
             <div><dt>Người nhận</dt><dd id="summary-recipients">0</dd></div>
             <div><dt>Trạng thái</dt><dd>Bản nháp</dd></div>
           </dl>
