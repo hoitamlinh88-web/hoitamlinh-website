@@ -152,7 +152,7 @@ function renderMembers(members) {
   sorted.forEach(member => {
     const row = document.createElement('tr');
     if (!member.sms_opt_in) row.className = 'member-inactive';
-    row.innerHTML = `<td class="member-name-cell"><strong>${escapeHtml(member.full_name)}</strong><button type="button" class="member-edit" data-edit-id="${member.id}" title="Sửa tên và số điện thoại">Sửa</button></td>
+    row.innerHTML = `<td class="member-name-cell"><strong>${escapeHtml(member.full_name)}</strong><button type="button" class="member-edit" data-edit-id="${member.id}" title="Sửa thông tin" aria-label="Sửa thông tin ${escapeHtml(member.full_name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17.25V20h2.75L17.8 8.94l-2.75-2.75L4 17.25zm15.7-9.04a1 1 0 0 0 0-1.41l-2.5-2.5a1 1 0 0 0-1.41 0l-1.83 1.83 3.91 3.91 1.83-1.83z"/></svg></button></td>
       <td>${escapeHtml(member.phone || member.email || 'Chưa có')}</td>
       <td><button type="button" class="sms-status-toggle ${member.sms_opt_in ? 'is-active' : 'is-inactive'}" data-sms-id="${member.id}" title="Bấm để đổi trạng thái">${member.sms_opt_in ? 'Active' : 'Inactive'}</button></td>
       <td class="group-cell"></td>`;
@@ -169,7 +169,7 @@ function renderMembers(members) {
   });
   renderGroupManager();
 
-  tbody.querySelectorAll('[data-edit-id]').forEach(button => button.addEventListener('click', () => startEditMember(button.closest('tr'), button.dataset.editId)));
+  tbody.querySelectorAll('[data-edit-id]').forEach(button => button.addEventListener('click', () => openMemberDialog(button.dataset.editId)));
 
   tbody.querySelectorAll('[data-sms-id]').forEach(button => button.addEventListener('click', async () => {
     const member = currentMembers.find(item => item.id === button.dataset.smsId);
@@ -192,41 +192,59 @@ function phoneDigits(value) {
   return digits.length === 11 && digits.startsWith('1') ? digits.slice(1) : digits;
 }
 
-function startEditMember(row, memberId) {
+const memberDialog = document.querySelector('#member-dialog');
+const memberEditForm = document.querySelector('#member-edit-form');
+let editingMemberId = null;
+
+function showDialogError(message) {
+  const box = document.querySelector('#member-dialog-error');
+  box.textContent = message;
+  box.hidden = !message;
+}
+
+function openMemberDialog(memberId) {
   const member = currentMembers.find(item => item.id === memberId);
   if (!member) return;
-  const [nameCell, phoneCell] = row.children;
-  nameCell.innerHTML = `<input class="member-edit-input" name="full_name" value="${escapeHtml(member.full_name)}" aria-label="Họ và tên">`;
-  phoneCell.innerHTML = `<input class="member-edit-input" name="phone" type="tel" value="${escapeHtml(member.phone || '')}" aria-label="Số điện thoại">
-    <div class="member-edit-actions"><button type="button" class="button primary" data-save>Lưu</button><button type="button" class="button" data-cancel>Hủy</button></div>`;
-  const nameInput = nameCell.querySelector('input');
-  const phoneInput = phoneCell.querySelector('input');
-  nameInput.focus();
-  const cancel = () => renderMembers(currentMembers);
-  const save = async () => {
-    const fullName = nameInput.value.trim().replace(/\s+/g, ' ');
-    const phone = phoneInput.value.trim();
-    if (!fullName) return showNotice('Tên không được để trống.', 'error');
-    if (phone && phoneDigits(phone).length !== 10) return showNotice('Số điện thoại Mỹ phải có 10 số.', 'error');
-    const duplicate = phone && currentMembers.find(item => item.id !== member.id && phoneDigits(item.phone) === phoneDigits(phone));
-    if (duplicate && !window.confirm(`Số này đang thuộc "${duplicate.full_name}". Vẫn lưu?`)) return;
-    const [firstName, ...rest] = fullName.split(' ');
-    const update = { full_name: fullName, first_name: firstName, last_name: rest.join(' ') || null, phone: phone || null, updated_at: new Date().toISOString() };
+  editingMemberId = memberId;
+  memberEditForm.full_name.value = member.full_name || '';
+  memberEditForm.phone.value = member.phone || '';
+  memberEditForm.email.value = member.email || '';
+  showDialogError('');
+  memberDialog.showModal();
+  memberEditForm.full_name.focus();
+}
+
+memberDialog.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click', () => memberDialog.close()));
+memberDialog.addEventListener('click', event => { if (event.target === memberDialog) memberDialog.close(); });
+
+memberEditForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  const member = currentMembers.find(item => item.id === editingMemberId);
+  if (!member) return memberDialog.close();
+  const fullName = memberEditForm.full_name.value.trim().replace(/\s+/g, ' ');
+  const phone = memberEditForm.phone.value.trim();
+  const email = memberEditForm.email.value.trim();
+  if (!fullName) return showDialogError('Vui lòng nhập họ và tên.');
+  if (phone && phoneDigits(phone).length !== 10) return showDialogError('Số điện thoại Mỹ phải có đủ 10 số.');
+  const duplicate = phone && currentMembers.find(item => item.id !== member.id && phoneDigits(item.phone) === phoneDigits(phone));
+  if (duplicate && !window.confirm(`Số này đang thuộc "${duplicate.full_name}". Vẫn lưu?`)) return;
+  const [firstName, ...rest] = fullName.split(' ');
+  const update = { full_name: fullName, first_name: firstName, last_name: rest.join(' ') || null, phone: phone || null, email: email || null, updated_at: new Date().toISOString() };
+  const saveButton = document.querySelector('#member-dialog-save');
+  saveButton.disabled = true;
+  try {
     if (!access.preview) {
       const { error } = await supabase.from('members').update(update).eq('id', member.id);
-      if (error) return showNotice(error.message, 'error');
+      if (error) return showDialogError(error.message);
     }
     Object.assign(member, update);
+    memberDialog.close();
     renderMembers(currentMembers);
     showNotice(`Đã lưu thông tin của ${fullName}.`);
-  };
-  phoneCell.querySelector('[data-save]').addEventListener('click', save);
-  phoneCell.querySelector('[data-cancel]').addEventListener('click', cancel);
-  [nameInput, phoneInput].forEach(input => input.addEventListener('keydown', event => {
-    if (event.key === 'Enter') { event.preventDefault(); save(); }
-    if (event.key === 'Escape') cancel();
-  }));
-}
+  } finally {
+    saveButton.disabled = false;
+  }
+});
 
 document.querySelector('#member-form').addEventListener('submit', async event => {
   event.preventDefault();
