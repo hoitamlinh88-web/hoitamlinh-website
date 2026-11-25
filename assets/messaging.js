@@ -51,6 +51,7 @@ async function loadData() {
 }
 
 const NO_GROUP = '__no_group__';
+const STATUS_LABELS = { draft: 'Bản nháp', queued: 'Chờ gửi', sending: 'Đang gửi', sent: 'Đã gửi', failed: 'Gửi lỗi', scheduled: 'Đã hẹn giờ' };
 
 function renderGroupSelect() {
   const select = document.querySelector('#group-select');
@@ -78,7 +79,7 @@ function renderMembers() {
 
 function renderCampaigns() {
   const list = document.querySelector('#campaign-list');
-  list.innerHTML = campaigns.length ? campaigns.map(campaign => `<button class="campaign-row" type="button"><strong>${escapeHtml(campaign.title)}</strong><span>${campaign.status === 'draft' ? 'Bản nháp' : escapeHtml(campaign.status)}</span></button>`).join('') : '<p class="empty-state">Chưa có chiến dịch.</p>';
+  list.innerHTML = campaigns.length ? campaigns.map(campaign => `<button class="campaign-row" type="button"><strong>${escapeHtml(campaign.title)}</strong><span>${escapeHtml(STATUS_LABELS[campaign.status] || campaign.status)}</span></button>`).join('') : '<p class="empty-state">Chưa có chiến dịch.</p>';
 }
 
 function selectedMembers() {
@@ -312,9 +313,10 @@ async function saveCampaign(status = 'draft') {
   if (!form.title.value.trim() || !messageInput.value.trim()) throw new Error('Vui lòng nhập tên chiến dịch và nội dung tin nhắn.');
   if (!recipients.length) throw new Error('Vui lòng chọn ít nhất một hội viên Active.');
   if (access.preview) {
-    campaigns.unshift({ id: crypto.randomUUID(), title: form.title.value.trim(), status, created_at: new Date().toISOString() });
+    const id = crypto.randomUUID();
+    campaigns.unshift({ id, title: form.title.value.trim(), status, created_at: new Date().toISOString() });
     renderCampaigns();
-    return;
+    return id;
   }
   const mediaUrl = await uploadCampaignImage();
   const { data: campaign, error } = await supabase.from('message_campaigns').insert({ title: form.title.value.trim(), message: messageInput.value.trim(), channel: mediaUrl ? 'mms' : 'sms', media_url: mediaUrl, status, created_by: access.user.id, audience_filter: { member_ids: recipients.map(member => member.id), group: document.querySelector('#group-select').value || null } }).select('id').single();
@@ -323,6 +325,7 @@ async function saveCampaign(status = 'draft') {
   const { error: recipientError } = await supabase.from('message_recipients').insert(rows);
   if (recipientError) throw recipientError;
   await loadData();
+  return campaign.id;
 }
 
 form.addEventListener('submit', async event => {
@@ -331,11 +334,44 @@ form.addEventListener('submit', async event => {
   catch (error) { showNotice(error.message, 'error'); }
 });
 
+async function checkTwilio() {
+  const badge = document.querySelector('.provider-status');
+  if (access.preview) { badge.textContent = 'Bản xem trước'; return; }
+  const { data, error } = await supabase.functions.invoke('send-campaign', { body: { action: 'status' } });
+  const ok = !error && data?.configured;
+  badge.textContent = ok ? 'Twilio đã kết nối' : 'Twilio chưa cài đặt';
+  badge.classList.toggle('is-connected', Boolean(ok));
+}
+
 document.querySelector('#queue-campaign').addEventListener('click', async () => {
+  const button = document.querySelector('#queue-campaign');
+  const recipients = selectedMembers();
+  if (!recipients.length) return showNotice('Vui lòng chọn ít nhất một hội viên Active.', 'error');
+  const channel = campaignImageInput.files.length ? 'MMS (có hình)' : 'tin nhắn';
+  if (!window.confirm(`Gửi ${channel} này tới ${recipients.length} hội viên ngay bây giờ?\nTin đã gửi thì không thu hồi được.`)) return;
+  button.disabled = true;
+  button.textContent = 'Đang gửi...';
   try {
-    await saveCampaign('draft');
-    showNotice('Đã chuẩn bị danh sách gửi. Cần kết nối SimpleTexting hoặc Twilio để gửi SMS thật.', 'info');
-  } catch (error) { showNotice(error.message, 'error'); }
+    const campaignId = await saveCampaign('draft');
+    if (access.preview) { showNotice(`Bản xem trước: sẽ gửi tới ${recipients.length} người.`, 'info'); return; }
+    const { data, error } = await supabase.functions.invoke('send-campaign', { body: { campaign_id: campaignId } });
+    if (error) {
+      let message = error.message;
+      try { message = (await error.context.json()).error || message; } catch { /* keep default */ }
+      throw new Error(message);
+    }
+    const parts = [`Đã gửi ${data.sent}`];
+    if (data.failed) parts.push(`lỗi ${data.failed}`);
+    if (data.opted_out) parts.push(`${data.opted_out} người đã nhắn STOP (đã chuyển Inactive)`);
+    if (data.skipped) parts.push(`bỏ qua ${data.skipped} người Inactive`);
+    showNotice(parts.join(' · '), data.failed ? 'info' : 'success');
+    await loadData();
+  } catch (error) {
+    showNotice(error.message, 'error');
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Gửi ngay';
+  }
 });
 
 function escapeHtml(value) {
@@ -343,3 +379,4 @@ function escapeHtml(value) {
 }
 
 loadData().catch(error => showNotice(error.message, 'error'));
+checkTwilio().catch(() => {});
