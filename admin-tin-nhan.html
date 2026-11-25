@@ -144,6 +144,20 @@
           </dl>
         </aside>
       </div>
+      <dialog class="campaign-detail" id="campaign-detail" aria-labelledby="campaign-detail-title">
+        <header class="campaign-detail-head">
+          <div><h2 id="campaign-detail-title">Chiến dịch</h2><small id="campaign-detail-meta"></small></div>
+          <button type="button" class="campaign-detail-close" id="campaign-detail-close" aria-label="Đóng">×</button>
+        </header>
+        <div class="campaign-detail-message" id="campaign-detail-message"></div>
+        <div class="campaign-detail-tabs" id="campaign-detail-tabs"></div>
+        <div class="table-wrap campaign-detail-table">
+          <table class="admin-table">
+            <thead><tr><th>Hội viên</th><th>Số điện thoại</th><th>Trạng thái</th><th>Ghi chú</th></tr></thead>
+            <tbody id="campaign-detail-rows"><tr><td colspan="4">Đang tải...</td></tr></tbody>
+          </table>
+        </div>
+      </dialog>
       <div class="editor-notice" id="message-notice" role="status" hidden></div>
     </main>
   </div>
