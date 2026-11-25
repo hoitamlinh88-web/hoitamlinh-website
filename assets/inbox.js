@@ -158,23 +158,9 @@ function updateBadge() {
   document.querySelectorAll('[data-inbox-badge]').forEach(badge => { badge.textContent = unread || ''; badge.hidden = !unread; });
 }
 
-async function loadWebhookUrl() {
-  const input = document.querySelector('#inbox-webhook-url');
-  if (access.preview) { input.value = 'https://.../functions/v1/twilio-inbox?token=...'; return; }
-  const { data, error } = await supabase.functions.invoke('send-campaign', { body: { action: 'inbox_webhook' } });
-  input.value = error ? 'Không tải được địa chỉ webhook.' : data.url;
-  if (!error && !messages.length) document.querySelector('#inbox-setup').open = true;
-}
-
-document.querySelector('#copy-webhook').addEventListener('click', async () => {
-  const input = document.querySelector('#inbox-webhook-url');
-  try { await navigator.clipboard.writeText(input.value); showNotice('Đã copy địa chỉ webhook.'); }
-  catch { input.select(); showNotice('Bấm Cmd+C để copy.', 'info'); }
-});
 document.querySelector('#thread-search').addEventListener('input', renderThreads);
 document.querySelector('#refresh-inbox').addEventListener('click', () => loadInbox().catch(error => showNotice(error.message, 'error')));
 
 await loadInbox().catch(error => showNotice(error.message, 'error'));
-loadWebhookUrl().catch(() => {});
 // New replies show up without reloading the page.
 window.setInterval(() => { if (!document.hidden) loadInbox().catch(() => {}); }, 30000);
