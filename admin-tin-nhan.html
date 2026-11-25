@@ -41,7 +41,7 @@
             <h3>Tải danh sách</h3>
             <label class="file-drop" for="member-file">
               <strong>Chọn file Excel hoặc CSV</strong>
-              <span>Cột mẫu: First Name, Last Name, Phone, DOB, Address</span>
+              <span>Cột mẫu: First Name, Last Name, Phone, DOB, Address, Group</span>
               <input id="member-file" type="file" accept=".xlsx,.xls,.csv">
             </label>
             <label class="consent-field"><input id="import-sms-consent" type="checkbox"> Danh sách này đã đồng ý nhận SMS</label>
@@ -60,6 +60,7 @@
               <label>Số điện thoại <span>*</span><input name="phone" type="tel" required></label>
               <label>Ngày sinh<input name="date_of_birth" type="date"></label>
               <label class="wide-field">Địa chỉ<input name="address"></label>
+              <label class="wide-field">Group<input name="group" placeholder="Ví dụ: Ban Tiếp Tân (nhiều group cách nhau dấu phẩy)"></label>
             </div>
             <label class="consent-field"><input name="sms_opt_in" type="checkbox"> Hội viên đã đồng ý nhận SMS</label>
             <div class="manual-form-actions"><button class="button primary" type="submit">Thêm hội viên</button></div>
@@ -80,8 +81,9 @@
           </div>
 
           <div class="composer-section audience-section">
-            <div class="section-row"><div><label>Người nhận</label><small id="recipient-count">0 người được chọn</small></div><button id="select-all-members" type="button">Chọn tất cả đủ điều kiện</button></div>
-            <div class="recipient-list" id="recipient-list"><p class="empty-state">Chưa có hội viên đồng ý nhận SMS.</p></div>
+            <div class="section-row"><div><label>Người nhận</label><small id="recipient-count">0 người được chọn</small></div><button id="select-all-members" type="button">Chọn tất cả Active</button></div>
+            <div class="group-picker"><label for="group-select">Gửi theo group</label><select id="group-select"><option value="">Chọn group...</option></select></div>
+            <div class="recipient-list" id="recipient-list"><p class="empty-state">Chưa có hội viên Active.</p></div>
           </div>
 
           <div class="composer-section">
