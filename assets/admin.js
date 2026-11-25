@@ -1,5 +1,6 @@
 import { supabase } from './supabase-client.js';
 import { requireRole, roleLabel, signOut } from './auth.js';
+import { loadGroups, createGroups, deleteGroup, renderGroupPicker } from './groups.js';
 
 const access = await requireRole(['admin']);
 const notice = document.querySelector('#admin-notice');
@@ -25,6 +26,8 @@ const sampleMembers = [
 ];
 
 async function loadDashboard() {
+  allGroups = await loadGroups(access.preview);
+  renderFormGroupPicker();
   if (access.preview) {
     renderProfiles(sampleProfiles);
     renderMembers(sampleMembers);
@@ -88,10 +91,55 @@ function renderProfiles(profiles) {
 }
 
 let currentMembers = [];
+let allGroups = [];
+let formGroupPicker = null;
 
-function parseGroups(value) {
-  return [...new Set(String(value || '').split(',').map(group => group.trim()).filter(Boolean))];
+function renderFormGroupPicker() {
+  formGroupPicker = renderGroupPicker(document.querySelector('#member-form-group-picker'), allGroups, []);
 }
+
+function renderGroupManager() {
+  const list = document.querySelector('#group-chip-list');
+  if (!allGroups.length) {
+    list.innerHTML = '<p class="empty-state">Chưa có group. Nhập tên rồi bấm "Tạo group".</p>';
+    return;
+  }
+  list.innerHTML = allGroups.map(name => {
+    const count = currentMembers.filter(member => (member.tags || []).includes(name)).length;
+    return `<span class="group-chip"><strong>${escapeHtml(name)}</strong><small>${count} người</small><button type="button" data-delete-group="${escapeHtml(name)}" aria-label="Xóa group ${escapeHtml(name)}" title="Xóa group">×</button></span>`;
+  }).join('');
+  list.querySelectorAll('[data-delete-group]').forEach(button => button.addEventListener('click', async () => {
+    const name = button.dataset.deleteGroup;
+    const count = currentMembers.filter(member => (member.tags || []).includes(name)).length;
+    if (!window.confirm(`Xóa group "${name}"?${count ? `\n${count} hội viên sẽ được gỡ khỏi group này.` : ''}`)) return;
+    try {
+      await deleteGroup(name, access.preview);
+      allGroups = allGroups.filter(group => group !== name);
+      currentMembers.forEach(member => { member.tags = (member.tags || []).filter(tag => tag !== name); });
+      renderFormGroupPicker();
+      renderMembers(currentMembers);
+      showNotice(`Đã xóa group "${name}".`);
+    } catch (error) { showNotice(error.message, 'error'); }
+  }));
+}
+
+document.querySelector('#group-create-form').addEventListener('submit', async event => {
+  event.preventDefault();
+  const input = event.currentTarget.group_name;
+  const name = input.value.trim().replace(/\s+/g, ' ');
+  if (!name) return;
+  if (name.includes(',')) return showNotice('Tên group không được có dấu phẩy.', 'error');
+  if (allGroups.some(group => group.toLocaleLowerCase('vi') === name.toLocaleLowerCase('vi'))) return showNotice(`Group "${name}" đã có.`, 'error');
+  try {
+    await createGroups([name], access.preview);
+    allGroups = [...allGroups, name].sort((a, b) => a.localeCompare(b, 'vi'));
+    input.value = '';
+    const selected = formGroupPicker ? formGroupPicker.get() : [];
+    formGroupPicker = renderGroupPicker(document.querySelector('#member-form-group-picker'), allGroups, selected);
+    renderMembers(currentMembers);
+    showNotice(`Đã tạo group "${name}".`);
+  } catch (error) { showNotice(error.message, 'error'); }
+});
 
 function renderMembers(members) {
   currentMembers = members;
@@ -101,18 +149,25 @@ function renderMembers(members) {
     String(a.full_name).localeCompare(String(b.full_name), 'vi'));
   tbody.innerHTML = sorted.length ? '' : '<tr><td colspan="4">Chưa có hội viên.</td></tr>';
 
-  const allGroups = [...new Set(members.flatMap(member => member.tags || []))].sort((a, b) => a.localeCompare(b, 'vi'));
-  document.querySelector('#member-groups').innerHTML = allGroups.map(group => `<option value="${escapeHtml(group)}"></option>`).join('');
-
   sorted.forEach(member => {
     const row = document.createElement('tr');
     if (!member.sms_opt_in) row.className = 'member-inactive';
     row.innerHTML = `<td><strong>${escapeHtml(member.full_name)}</strong></td>
       <td>${escapeHtml(member.phone || member.email || 'Chưa có')}</td>
       <td><button type="button" class="sms-status-toggle ${member.sms_opt_in ? 'is-active' : 'is-inactive'}" data-sms-id="${member.id}" title="Bấm để đổi trạng thái">${member.sms_opt_in ? 'Active' : 'Inactive'}</button></td>
-      <td><input class="group-input" data-group-id="${member.id}" list="member-groups" value="${escapeHtml((member.tags || []).join(', '))}" placeholder="Chưa có group" aria-label="Group của ${escapeHtml(member.full_name)}"></td>`;
+      <td class="group-cell"></td>`;
     tbody.appendChild(row);
+    renderGroupPicker(row.querySelector('.group-cell'), allGroups, member.tags || [], async tags => {
+      if (!access.preview) {
+        const { error } = await supabase.from('members').update({ tags }).eq('id', member.id);
+        if (error) return showNotice(error.message, 'error');
+      }
+      member.tags = tags;
+      renderGroupManager();
+      showNotice(`Đã lưu group cho ${member.full_name}.`);
+    });
   });
+  renderGroupManager();
 
   tbody.querySelectorAll('[data-sms-id]').forEach(button => button.addEventListener('click', async () => {
     const member = currentMembers.find(item => item.id === button.dataset.smsId);
@@ -128,19 +183,6 @@ function renderMembers(members) {
     renderMembers(currentMembers);
     showNotice(`${member.full_name}: ${next ? 'Active' : 'Inactive'}.`);
   }));
-
-  tbody.querySelectorAll('[data-group-id]').forEach(input => input.addEventListener('change', async () => {
-    const member = currentMembers.find(item => item.id === input.dataset.groupId);
-    if (!member) return;
-    const tags = parseGroups(input.value);
-    if (!access.preview) {
-      const { error } = await supabase.from('members').update({ tags }).eq('id', member.id);
-      if (error) return showNotice(error.message, 'error');
-    }
-    member.tags = tags;
-    renderMembers(currentMembers);
-    showNotice(tags.length ? `Đã lưu group cho ${member.full_name}.` : `Đã xóa group của ${member.full_name}.`);
-  }));
 }
 
 document.querySelector('#member-form').addEventListener('submit', async event => {
@@ -151,18 +193,20 @@ document.querySelector('#member-form').addEventListener('submit', async event =>
     phone: form.phone.value.trim() || null,
     email: form.email.value.trim() || null,
     sms_opt_in: form.sms_opt_in.checked,
-    tags: parseGroups(form.group.value)
+    tags: formGroupPicker ? formGroupPicker.get() : []
   };
   if (access.preview) {
     sampleMembers.push({ id: crypto.randomUUID(), ...member, is_active: true });
     renderMembers(sampleMembers);
     setStats({ posts: 24, members: sampleMembers.length, accounts: sampleProfiles.length, campaigns: 3 });
     form.reset();
+    renderFormGroupPicker();
     return showNotice('Đã thêm hội viên trong bản xem trước.', 'info');
   }
   const { error } = await supabase.from('members').insert(member);
   if (error) return showNotice(error.message, 'error');
   form.reset();
+  renderFormGroupPicker();
   showNotice('Đã thêm hội viên.');
   await loadDashboard();
 });

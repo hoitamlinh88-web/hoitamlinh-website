@@ -1,5 +1,6 @@
 import { supabase } from './supabase-client.js';
 import { requireRole, signOut } from './auth.js';
+import { loadGroups, createGroups, renderGroupPicker } from './groups.js';
 
 const access = await requireRole(['admin']);
 const form = document.querySelector('#message-form');
@@ -13,6 +14,8 @@ let members = [];
 let campaigns = [];
 let importedRows = [];
 let campaignImageUrl = '';
+let allGroups = [];
+let manualGroupPicker = null;
 
 document.querySelector('#admin-user-name').textContent = access.profile.display_name || access.user.email;
 document.querySelectorAll('[data-sign-out]').forEach(button => button.addEventListener('click', signOut));
@@ -41,6 +44,8 @@ async function loadData() {
     members = memberResult.data || [];
     campaigns = campaignResult.data || [];
   }
+  allGroups = await loadGroups(access.preview);
+  manualGroupPicker = renderGroupPicker(document.querySelector('#manual-group-picker'), allGroups, []);
   renderMembers();
   renderCampaigns();
 }
@@ -52,9 +57,9 @@ function renderGroupSelect() {
   const counts = new Map();
   members.forEach(member => (member.tags || []).forEach(group => counts.set(group, (counts.get(group) || 0) + 1)));
   const noGroup = members.filter(member => !(member.tags || []).length).length;
-  const groups = [...counts.keys()].sort((a, b) => a.localeCompare(b, 'vi'));
+  const groups = [...new Set([...allGroups, ...counts.keys()])].sort((a, b) => a.localeCompare(b, 'vi'));
   select.innerHTML = '<option value="">Chọn group...</option>' +
-    groups.map(group => `<option value="${escapeHtml(group)}">${escapeHtml(group)} (${counts.get(group)})</option>`).join('') +
+    groups.map(group => `<option value="${escapeHtml(group)}">${escapeHtml(group)} (${counts.get(group) || 0})</option>`).join('') +
     (noGroup ? `<option value="${NO_GROUP}">Chưa có group (${noGroup})</option>` : '');
 }
 
@@ -193,6 +198,7 @@ async function saveMembers(rows, smsOptIn) {
     }
   });
   if (!uniqueRows.length) throw new Error('Không có hội viên mới để lưu. Số điện thoại có thể đã tồn tại.');
+  await createGroups(uniqueRows.flatMap(row => row.tags), access.preview);
   if (access.preview) {
     if (smsOptIn) members.push(...uniqueRows.map(row => ({ id: crypto.randomUUID(), ...row })));
   } else {
@@ -216,7 +222,7 @@ document.querySelector('#save-import').addEventListener('click', async () => {
 manualMemberForm.addEventListener('submit', async event => {
   event.preventDefault();
   const data = new FormData(manualMemberForm);
-  const row = memberFromRow({ 'First Name': data.get('first_name'), 'Last Name': data.get('last_name'), Phone: data.get('phone'), DOB: data.get('date_of_birth'), Address: data.get('address'), Group: data.get('group') });
+  const row = memberFromRow({ 'First Name': data.get('first_name'), 'Last Name': data.get('last_name'), Phone: data.get('phone'), DOB: data.get('date_of_birth'), Address: data.get('address'), Group: (manualGroupPicker ? manualGroupPicker.get() : []).join(',') });
   if (!row.valid) return showNotice('Vui lòng nhập họ, tên và số điện thoại hợp lệ.', 'error');
   try {
     await saveMembers([row], data.get('sms_opt_in') === 'on');
