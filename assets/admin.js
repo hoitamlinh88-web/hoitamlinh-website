@@ -61,18 +61,23 @@ function setStats(values) {
   document.querySelector('#stat-campaigns').textContent = values.campaigns;
 }
 
+// This account is always an active admin; the database enforces it too.
+const DEFAULT_ADMIN_EMAIL = 'ryantranusvn@gmail.com';
+
 function renderProfiles(profiles) {
   const tbody = document.querySelector('#accounts-table');
   tbody.innerHTML = '';
   profiles.forEach(profile => {
+    const locked = String(profile.email || '').toLowerCase() === DEFAULT_ADMIN_EMAIL;
     const row = document.createElement('tr');
+    if (locked) row.className = 'account-locked';
     row.innerHTML = `
-      <td><strong>${escapeHtml(profile.display_name || 'Chưa đặt tên')}</strong></td>
+      <td><strong>${escapeHtml(profile.display_name || 'Chưa đặt tên')}</strong>${locked ? ' <span class="account-default-badge" title="Tài khoản mặc định, không thể đổi vai trò hay tắt">Mặc định</span>' : ''}</td>
       <td>${escapeHtml(profile.email || '')}</td>
-      <td><select class="role-select" data-profile-id="${profile.id}">
+      <td><select class="role-select" data-profile-id="${profile.id}" ${locked ? 'disabled' : ''}>
         <option value="member">Hội viên</option><option value="monitor">Monitor</option><option value="admin">Quản trị viên</option>
       </select></td>
-      <td><label class="status-toggle"><input type="checkbox" data-active-id="${profile.id}" ${profile.is_active ? 'checked' : ''}> Đang hoạt động</label></td>`;
+      <td><label class="status-toggle"><input type="checkbox" data-active-id="${profile.id}" ${profile.is_active ? 'checked' : ''} ${locked ? 'disabled' : ''}> Đang hoạt động</label></td>`;
     row.querySelector('select').value = profile.role;
     tbody.appendChild(row);
   });
