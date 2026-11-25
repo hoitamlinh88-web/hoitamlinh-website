@@ -10,6 +10,13 @@ const displayNameRow = document.querySelector('#display-name-row');
 const status = document.querySelector('#auth-status');
 let mode = 'login';
 
+// Go back to the page that sent people here (e.g. a post they want to comment on).
+function afterLogin(role) {
+  const next = new URLSearchParams(window.location.search).get('next') || '';
+  const safe = /^[a-z0-9-]+\.html(\?[^#]*)?$/i.test(next) && !/^dang-nhap\.html/i.test(next);
+  return safe && (role !== 'member' || !/^(admin|dang-bai)/i.test(next)) ? next : destinationForRole(role);
+}
+
 const showStatus = (message, type = '') => {
   status.textContent = message;
   status.className = `auth-status ${type}`;
@@ -57,7 +64,7 @@ form.addEventListener('submit', async event => {
       if (!data.session) {
         showStatus('Tài khoản đã được tạo. Vui lòng kiểm tra email để xác nhận.', 'success');
       } else {
-        window.location.replace('index.html');
+        window.location.replace(afterLogin('member'));
       }
       return;
     }
@@ -65,7 +72,7 @@ form.addEventListener('submit', async event => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
     const access = await getAccess();
-    window.location.replace(destinationForRole(access.profile?.role));
+    window.location.replace(afterLogin(access.profile?.role));
   } catch (error) {
     showStatus(error.message || 'Không thể xử lý yêu cầu đăng nhập.', 'error');
   } finally {
@@ -75,6 +82,6 @@ form.addEventListener('submit', async event => {
 
 getAccess().then(access => {
   if (access.user && access.profile) {
-    window.location.replace(destinationForRole(access.profile.role));
+    window.location.replace(afterLogin(access.profile.role));
   }
 }).catch(() => {});
