@@ -77,7 +77,8 @@ function renderProfiles(profiles) {
       <td><select class="role-select" data-profile-id="${profile.id}" ${locked ? 'disabled' : ''}>
         <option value="member">Hội viên</option><option value="monitor">Monitor</option><option value="admin">Quản trị viên</option>
       </select></td>
-      <td><label class="status-toggle"><input type="checkbox" data-active-id="${profile.id}" ${profile.is_active ? 'checked' : ''} ${locked ? 'disabled' : ''}> Đang hoạt động</label></td>`;
+      <td><label class="status-toggle"><input type="checkbox" data-active-id="${profile.id}" ${profile.is_active ? 'checked' : ''} ${locked ? 'disabled' : ''}> Đang hoạt động</label></td>
+      <td class="account-actions">${locked || profile.id === access.user.id ? '' : `<button type="button" class="account-delete" data-delete-account="${profile.id}" title="Xóa tài khoản" aria-label="Xóa tài khoản ${escapeHtml(profile.display_name || profile.email || '')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l1 2h4v2H4V5h4l1-2zm-3 6h12l-1 12H7L6 9zm4 2v8h2v-8h-2zm4 0v8h2v-8h-2z"/></svg></button>`}</td>`;
     row.querySelector('select').value = profile.role;
     tbody.appendChild(row);
   });
@@ -86,6 +87,24 @@ function renderProfiles(profiles) {
     if (access.preview) return showNotice(`Đã chọn vai trò ${roleLabel(select.value)} trong bản xem trước.`, 'info');
     const { error } = await supabase.from('profiles').update({ role: select.value }).eq('id', select.dataset.profileId);
     if (error) showNotice(error.message, 'error'); else showNotice('Đã cập nhật vai trò.');
+  }));
+
+  tbody.querySelectorAll('[data-delete-account]').forEach(button => button.addEventListener('click', async () => {
+    const profile = profiles.find(item => item.id === button.dataset.deleteAccount);
+    if (!profile) return;
+    const label = `${profile.display_name || 'Chưa đặt tên'} (${profile.email || 'không có email'})`;
+    if (!window.confirm(`Xóa vĩnh viễn tài khoản ${label}?\n\nNgười này sẽ không đăng nhập được nữa và bình luận của họ cũng bị xóa. Không thể hoàn tác.`)) return;
+    if (access.preview) return showNotice('Bản xem trước: không xóa thật.', 'info');
+    button.disabled = true;
+    const { error } = await supabase.functions.invoke('delete-account', { body: { profile_id: profile.id } });
+    if (error) {
+      let message = error.message;
+      try { message = (await error.context.json()).error || message; } catch { /* keep default */ }
+      button.disabled = false;
+      return showNotice(message, 'error');
+    }
+    showNotice(`Đã xóa tài khoản ${label}.`);
+    await loadDashboard();
   }));
 
   tbody.querySelectorAll('[data-active-id]').forEach(input => input.addEventListener('change', async () => {
