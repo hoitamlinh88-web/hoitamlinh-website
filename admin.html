@@ -77,6 +77,24 @@
           </table>
         </div>
       </section>
+      <dialog class="member-dialog" id="member-dialog" aria-labelledby="member-dialog-title">
+        <form method="dialog" id="member-edit-form">
+          <header class="member-dialog-head">
+            <h2 id="member-dialog-title">Sửa thông tin hội viên</h2>
+            <button type="button" class="member-dialog-close" data-close aria-label="Đóng">×</button>
+          </header>
+          <div class="member-dialog-body">
+            <label>Họ và tên<input name="full_name" required autocomplete="off"></label>
+            <label>Số điện thoại<input name="phone" type="tel" placeholder="(714) 555-0123" autocomplete="off"></label>
+            <label>Email<input name="email" type="email" placeholder="Không bắt buộc" autocomplete="off"></label>
+            <p class="member-dialog-error" id="member-dialog-error" hidden></p>
+          </div>
+          <footer class="member-dialog-foot">
+            <button type="button" class="button" data-close>Hủy</button>
+            <button type="submit" class="button primary" id="member-dialog-save">Lưu thay đổi</button>
+          </footer>
+        </form>
+      </dialog>
       <div class="editor-notice" id="admin-notice" role="status" hidden></div>
     </main>
   </div>
