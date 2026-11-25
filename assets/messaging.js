@@ -139,10 +139,78 @@ function renderCampaigns() {
     const label = STATUS_LABELS[campaign.status] || campaign.status;
     const when = campaign.status === 'scheduled' && campaign.scheduled_at ? ` · ${formatWhen(campaign.scheduled_at)}` : '';
     const cancel = campaign.status === 'scheduled' ? `<button type="button" class="campaign-cancel" data-cancel-id="${campaign.id}">Hủy hẹn</button>` : '';
-    return `<div class="campaign-row"><strong>${escapeHtml(campaign.title)}</strong><span>${escapeHtml(label + when)}</span>${cancel}</div>`;
+    return `<div class="campaign-row" role="button" tabindex="0" data-campaign-id="${campaign.id}" title="Xem chi tiết người nhận"><strong>${escapeHtml(campaign.title)}</strong><span>${escapeHtml(label + when)}</span>${cancel}</div>`;
   }).join('') : '<p class="empty-state">Chưa có chiến dịch.</p>';
-  list.querySelectorAll('[data-cancel-id]').forEach(button => button.addEventListener('click', () => cancelCampaign(button.dataset.cancelId, button)));
+  list.querySelectorAll('[data-cancel-id]').forEach(button => button.addEventListener('click', event => { event.stopPropagation(); cancelCampaign(button.dataset.cancelId, button); }));
+  list.querySelectorAll('[data-campaign-id]').forEach(row => {
+    row.addEventListener('click', () => openCampaignDetail(row.dataset.campaignId));
+    row.addEventListener('keydown', event => { if (event.key === 'Enter') openCampaignDetail(row.dataset.campaignId); });
+  });
 }
+
+const RECIPIENT_LABELS = {
+  delivered: ['Đã tới máy', 'is-delivered'],
+  sent: ['Đã gửi, chờ báo nhận', 'is-sent'],
+  scheduled: ['Đã hẹn giờ', 'is-sent'],
+  pending: ['Chưa gửi', 'is-pending'],
+  failed: ['Lỗi', 'is-failed'],
+  opted_out: ['Không gửi (Inactive/STOP)', 'is-failed'],
+  canceled: ['Đã hủy', 'is-pending']
+};
+const DETAIL_FILTERS = [
+  ['all', 'Tất cả', () => true],
+  ['delivered', 'Đã tới máy', row => row.status === 'delivered'],
+  ['waiting', 'Chờ báo nhận', row => ['sent', 'scheduled', 'pending'].includes(row.status)],
+  ['failed', 'Lỗi / không gửi', row => ['failed', 'opted_out', 'canceled'].includes(row.status)]
+];
+let detailRows = [];
+let detailFilter = 'all';
+
+function prettyPhone(phone) {
+  const digits = String(phone || '').replace(/\D/g, '').slice(-10);
+  return digits.length === 10 ? `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}` : String(phone || '');
+}
+
+function renderCampaignDetail() {
+  document.querySelector('#campaign-detail-tabs').innerHTML = DETAIL_FILTERS.map(([key, label, test]) =>
+    `<button type="button" class="${key === detailFilter ? 'is-on' : ''}" data-detail-filter="${key}">${label} (${detailRows.filter(test).length})</button>`).join('');
+  document.querySelectorAll('[data-detail-filter]').forEach(button => button.addEventListener('click', () => { detailFilter = button.dataset.detailFilter; renderCampaignDetail(); }));
+  const test = DETAIL_FILTERS.find(([key]) => key === detailFilter)[2];
+  const rows = detailRows.filter(test);
+  document.querySelector('#campaign-detail-rows').innerHTML = rows.length ? rows.map(row => {
+    const [label, cls] = RECIPIENT_LABELS[row.status] || [row.status, 'is-pending'];
+    return `<tr><td><strong>${escapeHtml(row.members?.full_name || 'Không rõ')}</strong></td><td>${escapeHtml(prettyPhone(row.destination))}</td><td><span class="recipient-status ${cls}">${escapeHtml(label)}</span></td><td>${escapeHtml(row.error_message || (row.sent_at ? formatWhen(row.sent_at) : ''))}</td></tr>`;
+  }).join('') : '<tr><td colspan="4">Không có ai trong mục này.</td></tr>';
+}
+
+async function openCampaignDetail(campaignId) {
+  const dialog = document.querySelector('#campaign-detail');
+  const campaign = campaigns.find(item => item.id === campaignId);
+  document.querySelector('#campaign-detail-title').textContent = campaign?.title || 'Chiến dịch';
+  document.querySelector('#campaign-detail-meta').textContent = campaign ? `${STATUS_LABELS[campaign.status] || campaign.status} · tạo lúc ${formatWhen(campaign.created_at)}` : '';
+  document.querySelector('#campaign-detail-message').textContent = '';
+  document.querySelector('#campaign-detail-rows').innerHTML = '<tr><td colspan="4">Đang tải...</td></tr>';
+  document.querySelector('#campaign-detail-tabs').innerHTML = '';
+  detailFilter = 'all';
+  dialog.showModal();
+  if (access.preview) { detailRows = []; renderCampaignDetail(); return; }
+  const [recipientResult, campaignResult] = await Promise.all([
+    supabase.from('message_recipients').select('status,destination,error_message,sent_at,members(full_name)').eq('campaign_id', campaignId),
+    supabase.from('message_campaigns').select('message,media_url').eq('id', campaignId).single()
+  ]);
+  if (recipientResult.error) {
+    document.querySelector('#campaign-detail-rows').innerHTML = `<tr><td colspan="4">${escapeHtml(recipientResult.error.message)}</td></tr>`;
+    return;
+  }
+  const order = { failed: 0, opted_out: 1, canceled: 2, pending: 3, scheduled: 4, sent: 5, delivered: 6 };
+  detailRows = (recipientResult.data || []).sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9) || String(a.members?.full_name).localeCompare(String(b.members?.full_name), 'vi'));
+  const info = campaignResult.data;
+  document.querySelector('#campaign-detail-message').textContent = info ? info.message + (info.media_url ? '\n[Có hình đính kèm]' : '') : '';
+  renderCampaignDetail();
+}
+
+document.querySelector('#campaign-detail-close').addEventListener('click', () => document.querySelector('#campaign-detail').close());
+document.querySelector('#campaign-detail').addEventListener('click', event => { if (event.target.id === 'campaign-detail') event.target.close(); });
 
 function selectedMembers() {
   if (audienceMode === 'group') return members.filter(member => inSelectedGroups(member) && !excludedIds.has(member.id));
