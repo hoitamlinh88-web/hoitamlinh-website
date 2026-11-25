@@ -152,7 +152,7 @@ function renderMembers(members) {
   sorted.forEach(member => {
     const row = document.createElement('tr');
     if (!member.sms_opt_in) row.className = 'member-inactive';
-    row.innerHTML = `<td><strong>${escapeHtml(member.full_name)}</strong></td>
+    row.innerHTML = `<td class="member-name-cell"><strong>${escapeHtml(member.full_name)}</strong><button type="button" class="member-edit" data-edit-id="${member.id}" title="Sửa tên và số điện thoại">Sửa</button></td>
       <td>${escapeHtml(member.phone || member.email || 'Chưa có')}</td>
       <td><button type="button" class="sms-status-toggle ${member.sms_opt_in ? 'is-active' : 'is-inactive'}" data-sms-id="${member.id}" title="Bấm để đổi trạng thái">${member.sms_opt_in ? 'Active' : 'Inactive'}</button></td>
       <td class="group-cell"></td>`;
@@ -169,6 +169,8 @@ function renderMembers(members) {
   });
   renderGroupManager();
 
+  tbody.querySelectorAll('[data-edit-id]').forEach(button => button.addEventListener('click', () => startEditMember(button.closest('tr'), button.dataset.editId)));
+
   tbody.querySelectorAll('[data-sms-id]').forEach(button => button.addEventListener('click', async () => {
     const member = currentMembers.find(item => item.id === button.dataset.smsId);
     if (!member) return;
@@ -182,6 +184,47 @@ function renderMembers(members) {
     member.sms_opt_in = next;
     renderMembers(currentMembers);
     showNotice(`${member.full_name}: ${next ? 'Active' : 'Inactive'}.`);
+  }));
+}
+
+function phoneDigits(value) {
+  const digits = String(value || '').replace(/\D/g, '');
+  return digits.length === 11 && digits.startsWith('1') ? digits.slice(1) : digits;
+}
+
+function startEditMember(row, memberId) {
+  const member = currentMembers.find(item => item.id === memberId);
+  if (!member) return;
+  const [nameCell, phoneCell] = row.children;
+  nameCell.innerHTML = `<input class="member-edit-input" name="full_name" value="${escapeHtml(member.full_name)}" aria-label="Họ và tên">`;
+  phoneCell.innerHTML = `<input class="member-edit-input" name="phone" type="tel" value="${escapeHtml(member.phone || '')}" aria-label="Số điện thoại">
+    <div class="member-edit-actions"><button type="button" class="button primary" data-save>Lưu</button><button type="button" class="button" data-cancel>Hủy</button></div>`;
+  const nameInput = nameCell.querySelector('input');
+  const phoneInput = phoneCell.querySelector('input');
+  nameInput.focus();
+  const cancel = () => renderMembers(currentMembers);
+  const save = async () => {
+    const fullName = nameInput.value.trim().replace(/\s+/g, ' ');
+    const phone = phoneInput.value.trim();
+    if (!fullName) return showNotice('Tên không được để trống.', 'error');
+    if (phone && phoneDigits(phone).length !== 10) return showNotice('Số điện thoại Mỹ phải có 10 số.', 'error');
+    const duplicate = phone && currentMembers.find(item => item.id !== member.id && phoneDigits(item.phone) === phoneDigits(phone));
+    if (duplicate && !window.confirm(`Số này đang thuộc "${duplicate.full_name}". Vẫn lưu?`)) return;
+    const [firstName, ...rest] = fullName.split(' ');
+    const update = { full_name: fullName, first_name: firstName, last_name: rest.join(' ') || null, phone: phone || null, updated_at: new Date().toISOString() };
+    if (!access.preview) {
+      const { error } = await supabase.from('members').update(update).eq('id', member.id);
+      if (error) return showNotice(error.message, 'error');
+    }
+    Object.assign(member, update);
+    renderMembers(currentMembers);
+    showNotice(`Đã lưu thông tin của ${fullName}.`);
+  };
+  phoneCell.querySelector('[data-save]').addEventListener('click', save);
+  phoneCell.querySelector('[data-cancel]').addEventListener('click', cancel);
+  [nameInput, phoneInput].forEach(input => input.addEventListener('keydown', event => {
+    if (event.key === 'Enter') { event.preventDefault(); save(); }
+    if (event.key === 'Escape') cancel();
   }));
 }
 
