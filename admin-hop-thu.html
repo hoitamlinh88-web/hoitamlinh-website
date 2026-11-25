@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hộp thư tin nhắn - Hội Tâm Linh</title>
+  <link rel="stylesheet" href="assets/site.css">
+</head>
+<body class="admin-body">
+  <div class="admin-topbar">
+    <a class="admin-brand" href="admin.html">
+      <img src="https://rbxebagnwgmhrepnftwp.supabase.co/storage/v1/object/public/site-images/tam-linh.png" alt="">
+      <span><strong>Hội Tâm Linh</strong><small>Quản trị nội bộ</small></span>
+    </a>
+    <div class="admin-account"><span id="admin-user-name">Quản trị viên</span><button type="button" data-sign-out>Đăng xuất</button></div>
+  </div>
+
+  <div class="admin-layout">
+    <aside class="admin-sidebar" aria-label="Điều hướng quản trị">
+      <nav>
+        <a href="admin.html">Tổng quan</a>
+        <a href="dang-bai.html">Đăng bài mới</a>
+        <a href="admin.html#members-section">Hội viên</a>
+        <a href="admin-tin-nhan.html">Tin nhắn</a>
+        <a class="active" href="admin-hop-thu.html">Hộp thư <span class="nav-badge" data-inbox-badge hidden></span></a>
+        <a href="index.html">Xem website</a>
+      </nav>
+    </aside>
+
+    <main class="admin-main">
+      <header class="admin-page-heading">
+        <div><p>Liên lạc hội viên</p><h1>Hộp thư</h1></div>
+        <button class="button secondary" id="refresh-inbox" type="button">Tải lại</button>
+      </header>
+
+      <details class="admin-panel inbox-setup" id="inbox-setup">
+        <summary>Cài đặt nhận tin trên Twilio</summary>
+        <div class="inbox-setup-body">
+          <p>Để tin hội viên nhắn tới số của Hội hiện ở đây, dán địa chỉ dưới vào Twilio: <strong>Messaging → Services → (service của Hội) → Integration → Incoming messages → Send a webhook → Request URL</strong>, phương thức <strong>HTTP POST</strong>, rồi bấm Save.</p>
+          <div class="inbox-webhook-row">
+            <input id="inbox-webhook-url" readonly value="Đang tải...">
+            <button class="button secondary" id="copy-webhook" type="button">Copy</button>
+          </div>
+          <small>Địa chỉ này có mã bảo vệ riêng, đừng chia sẻ công khai.</small>
+        </div>
+      </details>
+
+      <div class="inbox-layout">
+        <aside class="inbox-threads">
+          <input id="thread-search" type="search" placeholder="Tìm tên hoặc số điện thoại...">
+          <div id="thread-list"><p class="empty-state">Đang tải...</p></div>
+        </aside>
+        <section class="inbox-conversation" id="conversation">
+          <p class="empty-state">Chọn một cuộc trò chuyện để xem tin nhắn.</p>
+        </section>
+      </div>
+      <div class="editor-notice" id="inbox-notice" role="status" hidden></div>
+    </main>
+  </div>
+  <script type="module" src="assets/inbox.js"></script>
+</body>
+</html>

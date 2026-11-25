@@ -22,6 +22,7 @@
         <a href="dang-bai.html">Đăng bài mới</a>
         <a href="admin.html#members-section">Hội viên</a>
         <a class="active" href="admin-tin-nhan.html">Tin nhắn</a>
+        <a href="admin-hop-thu.html">Hộp thư <span class="nav-badge" data-inbox-badge hidden></span></a>
         <a href="index.html">Xem website</a>
       </nav>
     </aside>
@@ -81,9 +82,26 @@
           </div>
 
           <div class="composer-section audience-section">
-            <div class="section-row"><div><label>Người nhận</label><small id="recipient-count">0 người được chọn</small></div><button id="select-all-members" type="button">Chọn tất cả Active</button></div>
-            <div class="group-picker"><label for="group-select">Gửi theo group</label><select id="group-select"><option value="">Chọn group...</option></select></div>
-            <div class="recipient-list" id="recipient-list"><p class="empty-state">Chưa có hội viên Active.</p></div>
+            <div class="section-row"><label>Người nhận</label><small id="recipient-count">0 người sẽ nhận</small></div>
+            <div class="audience-mode" role="radiogroup" aria-label="Cách chọn người nhận">
+              <label><input type="radio" name="audience_mode" value="group" checked> Gửi cho group</label>
+              <label><input type="radio" name="audience_mode" value="members"> Gửi cho từng hội viên</label>
+            </div>
+
+            <div id="audience-group" class="audience-panel">
+              <p class="audience-hint">Chọn một hoặc nhiều group. Chỉ hội viên Active mới nhận tin.</p>
+              <div class="audience-group-list" id="audience-group-list"><p class="empty-state">Chưa có group.</p></div>
+              <div class="audience-exclude">
+                <div class="section-row"><label for="exclude-search">Loại trừ (không gửi cho những người này)</label><small id="exclude-count">0 người bị loại</small></div>
+                <input id="exclude-search" type="search" placeholder="Tìm tên hoặc số điện thoại trong các group đã chọn...">
+                <div class="recipient-list" id="exclude-list"><p class="empty-state">Chọn group trước.</p></div>
+              </div>
+            </div>
+
+            <div id="audience-members" class="audience-panel" hidden>
+              <div class="section-row"><input id="member-search" type="search" placeholder="Tìm tên hoặc số điện thoại..."><button id="select-all-members" type="button">Chọn tất cả Active</button></div>
+              <div class="recipient-list" id="recipient-list"><p class="empty-state">Chưa có hội viên Active.</p></div>
+            </div>
           </div>
 
           <div class="composer-section">
@@ -96,6 +114,14 @@
               <button id="remove-campaign-image" type="button" hidden>Xóa hình</button>
             </div>
             <p class="message-hint">Nội dung nên ghi rõ Hội Tâm Linh và cách ngừng nhận tin.</p>
+          </div>
+
+          <div class="composer-section schedule-section">
+            <label class="schedule-toggle"><input id="schedule-enabled" type="checkbox"> Hẹn giờ gửi</label>
+            <div class="schedule-fields" id="schedule-fields" hidden>
+              <input id="schedule-at" type="datetime-local">
+              <small>Theo giờ trên máy bạn đang dùng. Phải cách bây giờ ít nhất 15 phút và không quá 35 ngày.</small>
+            </div>
           </div>
 
           <div class="composer-footer">
@@ -114,7 +140,7 @@
           <dl class="delivery-summary">
             <div><dt>Kênh</dt><dd id="summary-channel">SMS</dd></div>
             <div><dt>Người nhận</dt><dd id="summary-recipients">0</dd></div>
-            <div><dt>Trạng thái</dt><dd>Bản nháp</dd></div>
+            <div><dt>Gửi lúc</dt><dd id="summary-when">Ngay khi bấm gửi</dd></div>
           </dl>
         </aside>
       </div>
