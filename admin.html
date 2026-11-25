@@ -50,13 +50,22 @@
         </div>
       </section>
 
+      <section class="admin-panel" id="groups-section">
+        <div class="panel-heading"><div><h2>Group hội viên</h2><p>Tạo group ở đây, rồi chọn group cho từng hội viên. Một hội viên có thể thuộc nhiều group.</p></div></div>
+        <form class="group-create-form" id="group-create-form">
+          <input name="group_name" maxlength="60" placeholder="Tên group mới, ví dụ: Ban Tiếp Tân" required aria-label="Tên group mới">
+          <button class="button primary" type="submit">Tạo group</button>
+        </form>
+        <div class="group-chip-list" id="group-chip-list"><p class="empty-state">Chưa có group.</p></div>
+      </section>
+
       <section class="admin-panel" id="members-section">
         <div class="panel-heading"><div><h2>Danh sách hội viên</h2><p>Thông tin dùng để gửi thông báo nội bộ. Chỉ để Active khi hội viên đã đồng ý nhận tin. Bấm vào ô Nhận SMS để đổi Active / Inactive.</p></div></div>
         <form class="member-form" id="member-form">
           <label>Họ và tên<input name="full_name" required></label>
           <label>Điện thoại<input name="phone" type="tel"></label>
           <label>Email<input name="email" type="email"></label>
-          <label>Group<input name="group" list="member-groups" placeholder="Ví dụ: Ban Tiếp Tân"></label>
+          <div class="member-form-groups"><span>Group</span><div id="member-form-group-picker"></div></div>
           <label class="check-field"><input name="sms_opt_in" type="checkbox"> Đồng ý nhận SMS</label>
           <button class="button primary" type="submit">Thêm hội viên</button>
         </form>
@@ -65,7 +74,6 @@
             <thead><tr><th>Hội viên</th><th>Liên lạc</th><th>Nhận SMS</th><th>Group</th></tr></thead>
             <tbody id="members-table"><tr><td colspan="4">Chưa có hội viên.</td></tr></tbody>
           </table>
-          <datalist id="member-groups"></datalist>
         </div>
       </section>
       <div class="editor-notice" id="admin-notice" role="status" hidden></div>
