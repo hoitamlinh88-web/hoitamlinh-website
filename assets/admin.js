@@ -20,8 +20,8 @@ const sampleProfiles = [
   { id: 'preview-member', display_name: 'Hội viên mẫu', email: 'hoivien@example.com', role: 'member', is_active: true }
 ];
 const sampleMembers = [
-  { id: 'member-1', full_name: 'Nguyễn Văn An', phone: '(714) 555-0124', email: 'an@example.com', sms_opt_in: true, is_active: true },
-  { id: 'member-2', full_name: 'Trần Thị Mai', phone: '(714) 555-0168', email: 'mai@example.com', sms_opt_in: false, is_active: true }
+  { id: 'member-1', full_name: 'Nguyễn Văn An', phone: '(714) 555-0124', email: 'an@example.com', sms_opt_in: true, is_active: true, tags: ['Ban Tiếp Tân'] },
+  { id: 'member-2', full_name: 'Trần Thị Mai', phone: '(714) 555-0168', email: 'mai@example.com', sms_opt_in: false, is_active: true, tags: [] }
 ];
 
 async function loadDashboard() {
@@ -34,7 +34,7 @@ async function loadDashboard() {
 
   const [profilesResult, membersResult, postsResult, campaignsResult] = await Promise.all([
     supabase.from('profiles').select('id,email,display_name,role,is_active').order('created_at'),
-    supabase.from('members').select('id,full_name,phone,email,sms_opt_in,is_active').order('full_name'),
+    supabase.from('members').select('id,full_name,phone,email,sms_opt_in,is_active,tags').order('full_name'),
     supabase.from('content_items').select('*', { count: 'exact', head: true }),
     supabase.from('message_campaigns').select('*', { count: 'exact', head: true })
   ]);
@@ -87,14 +87,60 @@ function renderProfiles(profiles) {
   }));
 }
 
+let currentMembers = [];
+
+function parseGroups(value) {
+  return [...new Set(String(value || '').split(',').map(group => group.trim()).filter(Boolean))];
+}
+
 function renderMembers(members) {
+  currentMembers = members;
   const tbody = document.querySelector('#members-table');
-  tbody.innerHTML = members.length ? '' : '<tr><td colspan="4">Chưa có hội viên.</td></tr>';
-  members.forEach(member => {
+  const sorted = [...members].sort((a, b) =>
+    Number(Boolean(b.sms_opt_in)) - Number(Boolean(a.sms_opt_in)) ||
+    String(a.full_name).localeCompare(String(b.full_name), 'vi'));
+  tbody.innerHTML = sorted.length ? '' : '<tr><td colspan="4">Chưa có hội viên.</td></tr>';
+
+  const allGroups = [...new Set(members.flatMap(member => member.tags || []))].sort((a, b) => a.localeCompare(b, 'vi'));
+  document.querySelector('#member-groups').innerHTML = allGroups.map(group => `<option value="${escapeHtml(group)}"></option>`).join('');
+
+  sorted.forEach(member => {
     const row = document.createElement('tr');
-    row.innerHTML = `<td><strong>${escapeHtml(member.full_name)}</strong></td><td>${escapeHtml(member.phone || member.email || 'Chưa có')}</td><td>${member.sms_opt_in ? 'Đã đồng ý' : 'Chưa đồng ý'}</td><td>${member.is_active ? 'Hoạt động' : 'Tạm ngưng'}</td>`;
+    if (!member.sms_opt_in) row.className = 'member-inactive';
+    row.innerHTML = `<td><strong>${escapeHtml(member.full_name)}</strong></td>
+      <td>${escapeHtml(member.phone || member.email || 'Chưa có')}</td>
+      <td><button type="button" class="sms-status-toggle ${member.sms_opt_in ? 'is-active' : 'is-inactive'}" data-sms-id="${member.id}" title="Bấm để đổi trạng thái">${member.sms_opt_in ? 'Active' : 'Inactive'}</button></td>
+      <td><input class="group-input" data-group-id="${member.id}" list="member-groups" value="${escapeHtml((member.tags || []).join(', '))}" placeholder="Chưa có group" aria-label="Group của ${escapeHtml(member.full_name)}"></td>`;
     tbody.appendChild(row);
   });
+
+  tbody.querySelectorAll('[data-sms-id]').forEach(button => button.addEventListener('click', async () => {
+    const member = currentMembers.find(item => item.id === button.dataset.smsId);
+    if (!member) return;
+    const next = !member.sms_opt_in;
+    if (next && !window.confirm(`Chuyển ${member.full_name} sang Active?\nChỉ chọn khi hội viên này đã đồng ý nhận tin nhắn của Hội.`)) return;
+    button.disabled = true;
+    if (!access.preview) {
+      const { error } = await supabase.from('members').update({ sms_opt_in: next }).eq('id', member.id);
+      if (error) { button.disabled = false; return showNotice(error.message, 'error'); }
+    }
+    member.sms_opt_in = next;
+    renderMembers(currentMembers);
+    showNotice(`${member.full_name}: ${next ? 'Active' : 'Inactive'}.`);
+  }));
+
+  tbody.querySelectorAll('[data-group-id]').forEach(input => input.addEventListener('change', async () => {
+    const member = currentMembers.find(item => item.id === input.dataset.groupId);
+    if (!member) return;
+    const tags = parseGroups(input.value);
+    if (!access.preview) {
+      const { error } = await supabase.from('members').update({ tags }).eq('id', member.id);
+      if (error) return showNotice(error.message, 'error');
+    }
+    member.tags = tags;
+    renderMembers(currentMembers);
+    showNotice(tags.length ? `Đã lưu group cho ${member.full_name}.` : `Đã xóa group của ${member.full_name}.`);
+  }));
 }
 
 document.querySelector('#member-form').addEventListener('submit', async event => {
@@ -104,7 +150,8 @@ document.querySelector('#member-form').addEventListener('submit', async event =>
     full_name: form.full_name.value.trim(),
     phone: form.phone.value.trim() || null,
     email: form.email.value.trim() || null,
-    sms_opt_in: form.sms_opt_in.checked
+    sms_opt_in: form.sms_opt_in.checked,
+    tags: parseGroups(form.group.value)
   };
   if (access.preview) {
     sampleMembers.push({ id: crypto.randomUUID(), ...member, is_active: true });

@@ -27,14 +27,14 @@ const showNotice = (message, type = 'success') => {
 async function loadData() {
   if (access.preview) {
     members = [
-      { id: 'm1', full_name: 'Nguyễn Văn An', phone: '(714) 555-0124', sms_opt_in: true },
-      { id: 'm2', full_name: 'Lê Thị Hạnh', phone: '(714) 555-0188', sms_opt_in: true },
-      { id: 'm3', full_name: 'Trần Minh Tâm', phone: '(714) 555-0196', sms_opt_in: true }
+      { id: 'm1', full_name: 'Nguyễn Văn An', phone: '(714) 555-0124', sms_opt_in: true, tags: ['Ban Tiếp Tân'] },
+      { id: 'm2', full_name: 'Lê Thị Hạnh', phone: '(714) 555-0188', sms_opt_in: true, tags: ['Ban Tiếp Tân', 'Đồng tử'] },
+      { id: 'm3', full_name: 'Trần Minh Tâm', phone: '(714) 555-0196', sms_opt_in: true, tags: [] }
     ];
     campaigns = [{ id: 'c1', title: 'Nhắc lịch sinh hoạt', status: 'draft', created_at: new Date().toISOString() }];
   } else {
     const [memberResult, campaignResult] = await Promise.all([
-      supabase.from('members').select('id,full_name,phone,sms_opt_in').eq('is_active', true).eq('sms_opt_in', true).not('phone', 'is', null).order('full_name'),
+      supabase.from('members').select('id,full_name,phone,sms_opt_in,tags').eq('is_active', true).eq('sms_opt_in', true).not('phone', 'is', null).order('full_name'),
       supabase.from('message_campaigns').select('id,title,status,created_at').order('created_at', { ascending: false }).limit(30)
     ]);
     if (memberResult.error || campaignResult.error) throw memberResult.error || campaignResult.error;
@@ -45,14 +45,28 @@ async function loadData() {
   renderCampaigns();
 }
 
+const NO_GROUP = '__no_group__';
+
+function renderGroupSelect() {
+  const select = document.querySelector('#group-select');
+  const counts = new Map();
+  members.forEach(member => (member.tags || []).forEach(group => counts.set(group, (counts.get(group) || 0) + 1)));
+  const noGroup = members.filter(member => !(member.tags || []).length).length;
+  const groups = [...counts.keys()].sort((a, b) => a.localeCompare(b, 'vi'));
+  select.innerHTML = '<option value="">Chọn group...</option>' +
+    groups.map(group => `<option value="${escapeHtml(group)}">${escapeHtml(group)} (${counts.get(group)})</option>`).join('') +
+    (noGroup ? `<option value="${NO_GROUP}">Chưa có group (${noGroup})</option>` : '');
+}
+
 function renderMembers() {
   const list = document.querySelector('#recipient-list');
+  renderGroupSelect();
   if (!members.length) {
-    list.innerHTML = '<p class="empty-state">Chưa có hội viên đồng ý nhận SMS.</p>';
+    list.innerHTML = '<p class="empty-state">Chưa có hội viên Active.</p>';
     updateRecipientCount();
     return;
   }
-  list.innerHTML = members.map(member => `<label><input type="checkbox" value="${member.id}"><span><strong>${escapeHtml(member.full_name)}</strong><small>${escapeHtml(member.phone)}</small></span></label>`).join('');
+  list.innerHTML = members.map(member => `<label><input type="checkbox" value="${member.id}"><span><strong>${escapeHtml(member.full_name)}</strong><small>${escapeHtml(member.phone)}${(member.tags || []).length ? ' · ' + escapeHtml(member.tags.join(', ')) : ''}</small></span></label>`).join('');
   list.querySelectorAll('input').forEach(input => input.addEventListener('change', updateRecipientCount));
   updateRecipientCount();
 }
@@ -110,6 +124,7 @@ function memberFromRow(row) {
   const phone = String(valueFor(row, ['phone', 'phonenumber', 'mobile', 'cell', 'sdt', 'sodienthoai']) ?? '').trim();
   const dateValue = valueFor(row, ['dob', 'dateofbirth', 'birthday', 'ngaysinh']);
   const address = String(valueFor(row, ['address', 'diachi']) ?? '').trim();
+  const groups = String(valueFor(row, ['group', 'groups', 'nhom', 'ban']) ?? '').split(',').map(group => group.trim()).filter(Boolean);
   return {
     first_name: firstName,
     last_name: lastName,
@@ -117,6 +132,7 @@ function memberFromRow(row) {
     phone,
     date_of_birth: normalizeDate(dateValue),
     address: address || null,
+    tags: [...new Set(groups)],
     valid: Boolean(firstName && lastName && phoneKey(phone).length >= 7)
   };
 }
@@ -173,7 +189,7 @@ async function saveMembers(rows, smsOptIn) {
     const key = phoneKey(row.phone);
     if (!knownPhones.has(key)) {
       knownPhones.add(key);
-      uniqueRows.push({ first_name: row.first_name, last_name: row.last_name, full_name: row.full_name, phone: row.phone, date_of_birth: row.date_of_birth, address: row.address, sms_opt_in: smsOptIn, is_active: true });
+      uniqueRows.push({ first_name: row.first_name, last_name: row.last_name, full_name: row.full_name, phone: row.phone, date_of_birth: row.date_of_birth, address: row.address, tags: row.tags || [], sms_opt_in: smsOptIn, is_active: true });
     }
   });
   if (!uniqueRows.length) throw new Error('Không có hội viên mới để lưu. Số điện thoại có thể đã tồn tại.');
@@ -200,7 +216,7 @@ document.querySelector('#save-import').addEventListener('click', async () => {
 manualMemberForm.addEventListener('submit', async event => {
   event.preventDefault();
   const data = new FormData(manualMemberForm);
-  const row = memberFromRow({ 'First Name': data.get('first_name'), 'Last Name': data.get('last_name'), Phone: data.get('phone'), DOB: data.get('date_of_birth'), Address: data.get('address') });
+  const row = memberFromRow({ 'First Name': data.get('first_name'), 'Last Name': data.get('last_name'), Phone: data.get('phone'), DOB: data.get('date_of_birth'), Address: data.get('address'), Group: data.get('group') });
   if (!row.valid) return showNotice('Vui lòng nhập họ, tên và số điện thoại hợp lệ.', 'error');
   try {
     await saveMembers([row], data.get('sms_opt_in') === 'on');
@@ -251,12 +267,24 @@ campaignImageInput.addEventListener('change', () => {
 document.querySelector('#remove-campaign-image').addEventListener('click', clearCampaignImage);
 
 document.querySelector('#select-all-members').addEventListener('click', () => {
+  document.querySelector('#group-select').value = '';
   document.querySelectorAll('#recipient-list input').forEach(input => { input.checked = true; });
+  updateRecipientCount();
+});
+
+document.querySelector('#group-select').addEventListener('change', event => {
+  const group = event.target.value;
+  if (!group) return;
+  document.querySelectorAll('#recipient-list input').forEach(input => {
+    const tags = members.find(member => member.id === input.value)?.tags || [];
+    input.checked = group === NO_GROUP ? tags.length === 0 : tags.includes(group);
+  });
   updateRecipientCount();
 });
 
 document.querySelector('#new-campaign').addEventListener('click', () => {
   form.reset();
+  document.querySelector('#group-select').value = '';
   clearCampaignImage();
   document.querySelectorAll('#recipient-list input').forEach(input => { input.checked = false; });
   messageInput.dispatchEvent(new Event('input'));
@@ -276,14 +304,14 @@ async function uploadCampaignImage() {
 async function saveCampaign(status = 'draft') {
   const recipients = selectedMembers();
   if (!form.title.value.trim() || !messageInput.value.trim()) throw new Error('Vui lòng nhập tên chiến dịch và nội dung tin nhắn.');
-  if (!recipients.length) throw new Error('Vui lòng chọn ít nhất một hội viên đã đồng ý nhận SMS.');
+  if (!recipients.length) throw new Error('Vui lòng chọn ít nhất một hội viên Active.');
   if (access.preview) {
     campaigns.unshift({ id: crypto.randomUUID(), title: form.title.value.trim(), status, created_at: new Date().toISOString() });
     renderCampaigns();
     return;
   }
   const mediaUrl = await uploadCampaignImage();
-  const { data: campaign, error } = await supabase.from('message_campaigns').insert({ title: form.title.value.trim(), message: messageInput.value.trim(), channel: mediaUrl ? 'mms' : 'sms', media_url: mediaUrl, status, created_by: access.user.id, audience_filter: { member_ids: recipients.map(member => member.id) } }).select('id').single();
+  const { data: campaign, error } = await supabase.from('message_campaigns').insert({ title: form.title.value.trim(), message: messageInput.value.trim(), channel: mediaUrl ? 'mms' : 'sms', media_url: mediaUrl, status, created_by: access.user.id, audience_filter: { member_ids: recipients.map(member => member.id), group: document.querySelector('#group-select').value || null } }).select('id').single();
   if (error) throw error;
   const rows = recipients.map(member => ({ campaign_id: campaign.id, member_id: member.id, destination: member.phone }));
   const { error: recipientError } = await supabase.from('message_recipients').insert(rows);
