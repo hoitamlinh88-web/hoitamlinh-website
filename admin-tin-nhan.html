@@ -67,14 +67,15 @@
 
           <div class="composer-section">
             <div class="section-row"><h3 class="step-title"><span class="step-num">2</span><label for="campaign-message">Nội dung tin nhắn</label></h3><small><span id="message-count">0</span>/1.600 ký tự</small></div>
-            <textarea id="campaign-message" name="message" maxlength="1600" rows="10" placeholder="Nhập nội dung thông báo gửi đến hội viên..." required></textarea>
+            <textarea id="campaign-message" name="message" maxlength="1520" rows="10" placeholder="Nhập nội dung thông báo gửi đến hội viên..." required></textarea>
             <div class="mms-media-field">
               <label for="campaign-image">Hình ảnh đính kèm</label>
               <input id="campaign-image" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
               <small>JPEG, PNG, WebP hoặc GIF, tối đa 5 MB.</small>
               <button id="remove-campaign-image" type="button" hidden>Xóa hình</button>
             </div>
-            <p class="message-hint">Nội dung nên ghi rõ Hội Tâm Linh và cách ngừng nhận tin.</p>
+            <p class="opt-out-note" id="opt-out-note" hidden>Dòng sau sẽ tự thêm vào cuối mỗi tin (Twilio bắt buộc): <strong>Hội Tâm Linh: Nhắn STOP để ngừng nhận tin. Reply STOP to opt out.</strong></p>
+            <p class="message-hint">Không cần tự gõ cách ngừng nhận tin, hệ thống tự thêm. Nếu nội dung đã có chữ STOP thì không thêm nữa.</p>
           </div>
 
           <div class="composer-section schedule-section">
