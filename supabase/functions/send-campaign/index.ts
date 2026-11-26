@@ -25,6 +25,14 @@ const TWILIO_SERVICE = Deno.env.get('TWILIO_MESSAGING_SERVICE_SID') ?? '';
 const TWILIO_API = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}`;
 const TWILIO_AUTH = `Basic ${btoa(`${TWILIO_KEY_SID}:${TWILIO_KEY_SECRET}`)}`;
 
+// Carrier/Twilio rules: every campaign message must say who it is from and how to opt out.
+// The admin page shows the same footer in its preview (assets/messaging.js OPT_OUT_FOOTER).
+const OPT_OUT_FOOTER = 'Hội Tâm Linh: Nhắn STOP để ngừng nhận tin. Reply STOP to opt out.';
+function withOptOut(text: string): string {
+  const body = String(text || '').trimEnd();
+  return /\bSTOP\b/i.test(body) ? body : `${body}\n\n${OPT_OUT_FOOTER}`;
+}
+
 function toE164(raw: string): string | null {
   const digits = String(raw || '').replace(/\D/g, '');
   if (digits.length === 10) return `+1${digits}`;
@@ -151,7 +159,7 @@ Deno.serve(async req => {
       await admin.from('message_recipients').update({ status: 'failed', error_message: 'Số điện thoại không hợp lệ' }).eq('id', recipient.id);
       continue;
     }
-    const sent = await sendOne(to, campaign.message, campaign.media_url, sendAt);
+    const sent = await sendOne(to, withOptOut(campaign.message), campaign.media_url, sendAt);
     if (sent.ok) {
       const status = sendAt ? 'scheduled' : 'sent';
       if (sendAt) result.scheduled++; else result.sent++;
