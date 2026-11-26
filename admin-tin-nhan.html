@@ -20,7 +20,7 @@
       <nav>
         <a href="admin.html">Tổng quan</a>
         <a href="dang-bai.html">Đăng bài mới</a>
-        <a href="admin.html#members-section">Hội viên</a>
+        <a href="admin-hoi-vien.html">Hội viên</a>
         <a class="active" href="admin-tin-nhan.html">Tin nhắn</a>
         <a href="admin-hop-thu.html">Hộp thư <span class="nav-badge" data-inbox-badge hidden></span></a>
         <a href="index.html">Xem website</a>
@@ -29,60 +29,21 @@
 
     <main class="admin-main message-main">
       <header class="admin-page-heading">
-        <div><p>Liên lạc hội viên</p><h1>Soạn tin nhắn</h1></div>
-        <span class="provider-status">Đang kiểm tra Twilio...</span>
+        <div><p>Liên lạc hội viên</p><h1>Tin nhắn</h1></div>
+        <div class="heading-actions"><span class="provider-status">Đang kiểm tra Twilio...</span><button class="button secondary" id="new-campaign" type="button">Soạn tin mới</button></div>
       </header>
 
-      <section class="admin-panel contact-import-panel" aria-labelledby="contact-import-title">
-        <div class="panel-heading">
-          <div><h2 id="contact-import-title">Nhập danh sách hội viên</h2><p>Tải Excel/CSV hoặc thêm từng người. Họ, tên và số điện thoại là bắt buộc.</p></div>
-        </div>
-        <div class="contact-import-grid">
-          <div class="contact-import-box">
-            <h3>Tải danh sách</h3>
-            <label class="file-drop" for="member-file">
-              <strong>Chọn file Excel hoặc CSV</strong>
-              <span>Cột mẫu: First Name, Last Name, Phone, DOB, Address, Group</span>
-              <input id="member-file" type="file" accept=".xlsx,.xls,.csv">
-            </label>
-            <label class="consent-field"><input id="import-sms-consent" type="checkbox"> Danh sách này đã đồng ý nhận SMS</label>
-            <div id="import-preview" class="import-preview" hidden></div>
-            <div class="import-actions" id="import-actions" hidden>
-              <button class="button secondary" id="cancel-import" type="button">Hủy</button>
-              <button class="button primary" id="save-import" type="button">Lưu danh sách</button>
-            </div>
-          </div>
-
-          <form class="contact-import-box manual-member-form" id="manual-member-form">
-            <h3>Nhập tay</h3>
-            <div class="contact-fields">
-              <label>First name <span>*</span><input name="first_name" required></label>
-              <label>Last name <span>*</span><input name="last_name" required></label>
-              <label>Số điện thoại <span>*</span><input name="phone" type="tel" required></label>
-              <label>Ngày sinh<input name="date_of_birth" type="date"></label>
-              <label class="wide-field">Địa chỉ<input name="address"></label>
-              <div class="wide-field member-form-groups"><span>Group</span><div id="manual-group-picker"></div></div>
-            </div>
-            <label class="consent-field"><input name="sms_opt_in" type="checkbox"> Hội viên đã đồng ý nhận SMS</label>
-            <div class="manual-form-actions"><button class="button primary" type="submit">Thêm hội viên</button></div>
-          </form>
-        </div>
-      </section>
-
-      <div class="messaging-layout">
-        <aside class="campaign-list-panel">
-          <div class="campaign-list-heading"><h2>Chiến dịch</h2><button id="new-campaign" type="button">Tạo mới</button></div>
-          <div id="campaign-list"><p class="empty-state">Chưa có chiến dịch.</p></div>
-        </aside>
-
+      <div class="compose-layout">
         <form class="message-composer" id="message-form">
-          <div class="composer-section">
-            <label for="campaign-title">Tên chiến dịch</label>
-            <input id="campaign-title" name="title" placeholder="Ví dụ: Thông báo sinh hoạt thứ Bảy" required>
+          <div class="composer-title">
+            <span class="composer-kicker">Chiến dịch mới</span>
+            <label class="visually-hidden" for="campaign-title">Tên chiến dịch</label>
+            <input id="campaign-title" name="title" placeholder="Đặt tên chiến dịch, ví dụ: Thông báo sinh hoạt thứ Bảy" maxlength="120" required autocomplete="off">
+            <small>Tên chỉ để quản lý, hội viên không thấy.</small>
           </div>
 
           <div class="composer-section audience-section">
-            <div class="section-row"><label>Người nhận</label><small id="recipient-count">0 người sẽ nhận</small></div>
+            <div class="section-row"><h3 class="step-title"><span class="step-num">1</span>Người nhận</h3><strong class="recipient-pill" id="recipient-count">0 người sẽ nhận</strong></div>
             <div class="audience-mode" role="radiogroup" aria-label="Cách chọn người nhận">
               <label><input type="radio" name="audience_mode" value="group" checked> Gửi cho group</label>
               <label><input type="radio" name="audience_mode" value="members"> Gửi cho từng hội viên</label>
@@ -105,7 +66,7 @@
           </div>
 
           <div class="composer-section">
-            <div class="section-row"><label for="campaign-message">Nội dung MMS</label><small><span id="message-count">0</span>/1.600 ký tự</small></div>
+            <div class="section-row"><h3 class="step-title"><span class="step-num">2</span><label for="campaign-message">Nội dung tin nhắn</label></h3><small><span id="message-count">0</span>/1.600 ký tự</small></div>
             <textarea id="campaign-message" name="message" maxlength="1600" rows="10" placeholder="Nhập nội dung thông báo gửi đến hội viên..." required></textarea>
             <div class="mms-media-field">
               <label for="campaign-image">Hình ảnh đính kèm</label>
@@ -117,6 +78,7 @@
           </div>
 
           <div class="composer-section schedule-section">
+            <h3 class="step-title"><span class="step-num">3</span>Thời gian gửi</h3>
             <label class="schedule-toggle"><input id="schedule-enabled" type="checkbox"> Hẹn giờ gửi</label>
             <div class="schedule-fields" id="schedule-fields" hidden>
               <input id="schedule-at" type="datetime-local">
@@ -144,6 +106,10 @@
           </dl>
         </aside>
       </div>
+      <section class="admin-panel campaign-history">
+        <div class="panel-heading"><div><h2>Chiến dịch đã tạo</h2><p>Bấm vào một chiến dịch để xem số nào đã tới máy, số nào bị lỗi.</p></div></div>
+        <div id="campaign-list"><p class="empty-state">Chưa có chiến dịch.</p></div>
+      </section>
       <dialog class="campaign-detail" id="campaign-detail" aria-labelledby="campaign-detail-title">
         <header class="campaign-detail-head">
           <div><h2 id="campaign-detail-title">Chiến dịch</h2><small id="campaign-detail-meta"></small></div>
@@ -161,7 +127,6 @@
       <div class="editor-notice" id="message-notice" role="status" hidden></div>
     </main>
   </div>
-  <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script type="module" src="assets/messaging.js"></script>
 </body>
 </html>

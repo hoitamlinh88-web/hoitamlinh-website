@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hội viên - Hội Tâm Linh</title>
+  <link rel="stylesheet" href="assets/site.css">
+</head>
+<body class="admin-body">
+  <div class="admin-topbar">
+    <a class="admin-brand" href="admin.html">
+      <img src="https://rbxebagnwgmhrepnftwp.supabase.co/storage/v1/object/public/site-images/tam-linh.png" alt="">
+      <span><strong>Hội Tâm Linh</strong><small>Quản trị nội bộ</small></span>
+    </a>
+    <div class="admin-account"><span id="admin-user-name">Quản trị viên</span><button type="button" data-sign-out>Đăng xuất</button></div>
+  </div>
+
+  <div class="admin-layout">
+    <aside class="admin-sidebar" aria-label="Điều hướng quản trị">
+      <nav>
+        <a href="admin.html">Tổng quan</a>
+        <a href="dang-bai.html">Đăng bài mới</a>
+        <a class="active" href="admin-hoi-vien.html">Hội viên</a>
+        <a href="admin-tin-nhan.html">Tin nhắn</a>
+        <a href="admin-hop-thu.html">Hộp thư <span class="nav-badge" data-inbox-badge hidden></span></a>
+        <a href="index.html">Xem website</a>
+      </nav>
+    </aside>
+
+    <main class="admin-main">
+      <header class="admin-page-heading">
+        <div><p>Quản lý</p><h1>Hội viên</h1></div>
+        <a class="button secondary" href="admin-tin-nhan.html">Soạn tin nhắn</a>
+      </header>
+
+      <section class="admin-panel contact-import-panel" aria-labelledby="contact-import-title">
+        <div class="panel-heading">
+          <div><h2 id="contact-import-title">Thêm hội viên</h2><p>Tải Excel/CSV hoặc thêm từng người. Họ, tên và số điện thoại là bắt buộc.</p></div>
+        </div>
+        <div class="contact-import-grid">
+          <div class="contact-import-box">
+            <h3>Tải danh sách</h3>
+            <label class="file-drop" for="member-file">
+              <strong>Chọn file Excel hoặc CSV</strong>
+              <span>Cột mẫu: First Name, Last Name, Phone, Email, DOB, Address, Group</span>
+              <input id="member-file" type="file" accept=".xlsx,.xls,.csv">
+            </label>
+            <label class="consent-field"><input id="import-sms-consent" type="checkbox"> Danh sách này đã đồng ý nhận SMS</label>
+            <div id="import-preview" class="import-preview" hidden></div>
+            <div class="import-actions" id="import-actions" hidden>
+              <button class="button secondary" id="cancel-import" type="button">Hủy</button>
+              <button class="button primary" id="save-import" type="button">Lưu danh sách</button>
+            </div>
+          </div>
+
+          <form class="contact-import-box manual-member-form" id="manual-member-form">
+            <h3>Nhập tay</h3>
+            <div class="contact-fields">
+              <label>First name <span>*</span><input name="first_name" required></label>
+              <label>Last name <span>*</span><input name="last_name" required></label>
+              <label>Số điện thoại <span>*</span><input name="phone" type="tel" required></label>
+              <label>Email<input name="email" type="email" placeholder="Không bắt buộc"></label>
+              <label>Ngày sinh<input name="date_of_birth" type="date"></label>
+              <label class="wide-field">Địa chỉ<input name="address"></label>
+              <div class="wide-field member-form-groups"><span>Group</span><div id="manual-group-picker"></div></div>
+            </div>
+            <label class="consent-field"><input name="sms_opt_in" type="checkbox"> Hội viên đã đồng ý nhận SMS</label>
+            <div class="manual-form-actions"><button class="button primary" type="submit">Thêm hội viên</button></div>
+          </form>
+        </div>
+      </section>
+
+      <section class="admin-panel" id="groups-section">
+        <div class="panel-heading"><div><h2>Group hội viên</h2><p>Tạo group ở đây, rồi chọn group cho từng hội viên. Một hội viên có thể thuộc nhiều group.</p></div></div>
+        <form class="group-create-form" id="group-create-form">
+          <input name="group_name" maxlength="60" placeholder="Tên group mới, ví dụ: Ban Tiếp Tân" required aria-label="Tên group mới">
+          <button class="button primary" type="submit">Tạo group</button>
+        </form>
+        <div class="group-chip-list" id="group-chip-list"><p class="empty-state">Chưa có group.</p></div>
+      </section>
+
+      <section class="admin-panel" id="members-section">
+        <div class="panel-heading"><div><h2>Danh sách hội viên</h2><p>Chỉ để Active khi hội viên đã đồng ý nhận tin. Bấm ô Nhận SMS để đổi Active / Inactive, bấm cây bút để sửa tên và số điện thoại.</p></div></div>
+        <div class="member-toolbar"><input id="member-search" type="search" placeholder="Tìm tên, số điện thoại hoặc email..." aria-label="Tìm hội viên"><small id="member-count"></small></div>
+        <div class="table-wrap">
+          <table class="admin-table">
+            <thead><tr><th>Hội viên</th><th>Liên lạc</th><th>Nhận SMS</th><th>Group</th></tr></thead>
+            <tbody id="members-table"><tr><td colspan="4">Chưa có hội viên.</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+      <dialog class="member-dialog" id="member-dialog" aria-labelledby="member-dialog-title">
+        <form method="dialog" id="member-edit-form">
+          <header class="member-dialog-head">
+            <h2 id="member-dialog-title">Sửa thông tin hội viên</h2>
+            <button type="button" class="member-dialog-close" data-close aria-label="Đóng">×</button>
+          </header>
+          <div class="member-dialog-body">
+            <label>Họ và tên<input name="full_name" required autocomplete="off"></label>
+            <label>Số điện thoại<input name="phone" type="tel" placeholder="(714) 555-0123" autocomplete="off"></label>
+            <label>Email<input name="email" type="email" placeholder="Không bắt buộc" autocomplete="off"></label>
+            <p class="member-dialog-error" id="member-dialog-error" hidden></p>
+          </div>
+          <footer class="member-dialog-foot">
+            <button type="button" class="button" data-close>Hủy</button>
+            <button type="submit" class="button primary" id="member-dialog-save">Lưu thay đổi</button>
+          </footer>
+        </form>
+      </dialog>
+      <div class="editor-notice" id="admin-notice" role="status" hidden></div>
+    </main>
+  </div>
+  <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script type="module" src="assets/members.js"></script>
+</body>
+</html>
