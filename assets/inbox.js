@@ -94,6 +94,7 @@ function renderThreads() {
 
 async function openThread(phone) {
   activePhone = phone;
+  document.querySelector('.inbox-layout').classList.add('has-thread');
   renderThreads();
   renderConversation();
   const unread = messages.filter(message => message.phone === phone && message.direction === 'in' && !message.is_read);
@@ -113,7 +114,7 @@ function renderConversation() {
   const member = membersByPhone.get(activePhone);
   const thread = messages.filter(message => message.phone === activePhone);
   const status = member ? (member.sms_opt_in ? '<span class="inbox-status is-active">Active</span>' : '<span class="inbox-status is-inactive">Inactive</span>') : '';
-  box.innerHTML = `<header class="conversation-head"><div><strong>${escapeHtml(threadName(activePhone))}</strong> ${status}<small>${escapeHtml(prettyPhone(activePhone))}</small></div></header>
+  box.innerHTML = `<header class="conversation-head"><button type="button" class="inbox-back" id="inbox-back" aria-label="Quay lại danh sách">‹</button><div><strong>${escapeHtml(threadName(activePhone))}</strong> ${status}<small>${escapeHtml(prettyPhone(activePhone))}</small></div></header>
     <div class="conversation-body" id="conversation-body">${thread.map(message => `<div class="bubble ${message.direction === 'out' ? 'bubble-out' : 'bubble-in'}">
         ${(message.media_urls || []).map(url => `<a href="${escapeHtml(url)}" target="_blank" rel="noreferrer">[Xem hình đính kèm]</a>`).join('')}
         <p>${escapeHtml(message.body)}</p>
@@ -127,6 +128,7 @@ function renderConversation() {
   body.scrollTop = body.scrollHeight;
   if (draft && !document.querySelector('#reply-body').disabled) document.querySelector('#reply-body').value = draft;
   document.querySelector('#reply-form').addEventListener('submit', sendReply);
+  document.querySelector('#inbox-back').addEventListener('click', () => document.querySelector('.inbox-layout').classList.remove('has-thread'));
 }
 
 async function sendReply(event) {
