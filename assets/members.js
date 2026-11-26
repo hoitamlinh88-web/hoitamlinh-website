@@ -95,12 +95,23 @@ function renderMembers(members) {
       String(a.full_name).localeCompare(String(b.full_name), 'vi'));
   const activeCount = members.filter(member => member.sms_opt_in).length;
   document.querySelector('#member-count').textContent = `${members.length} hội viên · ${activeCount} Active · ${members.length - activeCount} Inactive`;
-  tbody.innerHTML = sorted.length ? '' : `<tr><td colspan="4">${members.length ? 'Không tìm thấy hội viên.' : 'Chưa có hội viên.'}</td></tr>`;
+  tbody.innerHTML = sorted.length ? '' : `<tr><td colspan="5">${members.length ? 'Không tìm thấy hội viên.' : 'Chưa có hội viên.'}</td></tr>`;
 
-  sorted.forEach(member => {
+  const shownActive = sorted.filter(member => member.sms_opt_in).length;
+  let number = 0;
+  sorted.forEach((member, index) => {
+    // Section header before the first Active and the first Inactive member; numbering restarts in each.
+    if (index === 0 || Boolean(sorted[index - 1].sms_opt_in) !== Boolean(member.sms_opt_in)) {
+      number = 0;
+      const header = document.createElement('tr');
+      header.className = `member-section-row ${member.sms_opt_in ? 'is-active' : 'is-inactive'}`;
+      header.innerHTML = `<td colspan="5">${member.sms_opt_in ? 'Active' : 'Inactive'} <span>${member.sms_opt_in ? shownActive : sorted.length - shownActive} người</span></td>`;
+      tbody.appendChild(header);
+    }
+    number += 1;
     const row = document.createElement('tr');
     if (!member.sms_opt_in) row.className = 'member-inactive';
-    row.innerHTML = `<td class="member-name-cell"><strong>${escapeHtml(member.full_name)}</strong><button type="button" class="member-edit" data-edit-id="${member.id}" title="Sửa thông tin" aria-label="Sửa thông tin ${escapeHtml(member.full_name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17.25V20h2.75L17.8 8.94l-2.75-2.75L4 17.25zm15.7-9.04a1 1 0 0 0 0-1.41l-2.5-2.5a1 1 0 0 0-1.41 0l-1.83 1.83 3.91 3.91 1.83-1.83z"/></svg></button></td>
+    row.innerHTML = `<td class="member-number">${number}</td><td class="member-name-cell"><strong>${escapeHtml(member.full_name)}</strong><button type="button" class="member-edit" data-edit-id="${member.id}" title="Sửa thông tin" aria-label="Sửa thông tin ${escapeHtml(member.full_name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17.25V20h2.75L17.8 8.94l-2.75-2.75L4 17.25zm15.7-9.04a1 1 0 0 0 0-1.41l-2.5-2.5a1 1 0 0 0-1.41 0l-1.83 1.83 3.91 3.91 1.83-1.83z"/></svg></button></td>
       <td>${escapeHtml(member.phone || member.email || 'Chưa có')}</td>
       <td><button type="button" class="sms-status-toggle ${member.sms_opt_in ? 'is-active' : 'is-inactive'}" data-sms-id="${member.id}" title="Bấm để đổi trạng thái">${member.sms_opt_in ? 'Active' : 'Inactive'}</button></td>
       <td class="group-cell"></td>`;
