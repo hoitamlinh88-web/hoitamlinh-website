@@ -157,7 +157,8 @@ document.querySelector('#publish-post').addEventListener('click', async () => {
       excerpt: summaryInput.value.trim() || null,
       content_html: DOMPurify.sanitize(contentEditor.innerHTML),
       image_url: imageUrl,
-      categories: [categoryInput.value],
+      // A post for one Ban also shows on the general Ban chuyên môn page.
+      categories: categoryInput.value.startsWith('ban-') && categoryInput.value !== 'ban-chuyen-mon' ? [categoryInput.value, 'ban-chuyen-mon'] : [categoryInput.value],
       status: statusInput.value,
       featured: editorForm.elements.namedItem('featured').checked,
       comments_enabled: editorForm.elements.namedItem('comments').checked,

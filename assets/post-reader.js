@@ -3,6 +3,12 @@ import { supabase } from './supabase-client.js';
 import { getAccess } from './auth.js';
 
 const article = document.querySelector('#published-post');
+// Most specific first: a Ban post also carries 'ban-chuyen-mon'.
+const BACK_LINKS = [
+  ['ban-tiep-tan', 'Ban Tiếp Tân'], ['ban-van-linh', 'Ban Vấn Linh'], ['ban-dia-ly', 'Ban Địa Lý'],
+  ['ban-tam-linh-tri-lieu', 'Ban Tâm Linh Trị Liệu'], ['ban-moi-hon', 'Ban Mời Hồn'], ['ban-thuyet-trinh', 'Ban Thuyết Trình'],
+  ['ban-chuyen-mon', 'Ban chuyên môn'], ['su-kien', 'Sự kiện'], ['hinh-anh', 'Hình ảnh'], ['chia-se', 'Chia sẻ']
+];
 const status = document.querySelector('#post-reader-status');
 const slug = new URLSearchParams(window.location.search).get('slug');
 
@@ -11,7 +17,7 @@ if (!slug) {
 } else {
   const { data, error } = await supabase
     .from('content_items')
-    .select('id,title,excerpt,content_html,image_url,published_at,comments_enabled')
+    .select('id,title,excerpt,content_html,image_url,published_at,comments_enabled,categories')
     .eq('slug', slug)
     .eq('type', 'post')
     .eq('status', 'published')
@@ -21,6 +27,12 @@ if (!slug) {
     status.textContent = 'Bài viết không tồn tại hoặc chưa được xuất bản.';
   } else {
     document.title = `${data.title} - Hội Tâm Linh`;
+    const home = BACK_LINKS.find(([key]) => (data.categories || []).includes(key));
+    if (home) {
+      const back = document.querySelector('.post-back-link');
+      back.href = `${home[0]}.html`;
+      back.textContent = `← Trở lại ${home[1]}`;
+    }
     document.querySelector('#post-title').textContent = data.title;
     const date = document.querySelector('#post-date');
     date.dateTime = data.published_at;
