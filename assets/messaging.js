@@ -228,9 +228,18 @@ document.querySelectorAll('input[name=audience_mode]').forEach(radio => radio.ad
 document.querySelector('#exclude-search').addEventListener('input', renderExcludeList);
 document.querySelector('#member-search').addEventListener('input', renderMemberList);
 
+// Must match OPT_OUT_FOOTER in supabase/functions/send-campaign: the server adds it to every campaign message.
+const OPT_OUT_FOOTER = 'Hội Tâm Linh: Nhắn STOP để ngừng nhận tin. Reply STOP to opt out.';
+const withOptOut = text => {
+  const body = String(text || '').trimEnd();
+  return /\bSTOP\b/i.test(body) ? body : `${body}\n\n${OPT_OUT_FOOTER}`;
+};
+
 messageInput.addEventListener('input', () => {
-  document.querySelector('#message-count').textContent = messageInput.value.length;
-  document.querySelector('#message-preview').textContent = messageInput.value || 'Nội dung tin nhắn sẽ hiển thị tại đây.';
+  const full = messageInput.value.trim() ? withOptOut(messageInput.value) : '';
+  document.querySelector('#message-count').textContent = full.length;
+  document.querySelector('#message-preview').textContent = full || 'Nội dung tin nhắn sẽ hiển thị tại đây.';
+  document.querySelector('#opt-out-note').hidden = !messageInput.value.trim() || /\bSTOP\b/i.test(messageInput.value);
 });
 
 function updateChannelSummary() {
